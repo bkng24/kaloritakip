@@ -36,6 +36,7 @@ class CalorieTracker {
         this.calculateTarget();
         this.loadActiveLog();   // loads activeDate's log → updates UI
         this.renderCalendar();
+        this.scheduleReminder();
     }
 
     // ==================== ELEMENT REFS ====================
@@ -604,6 +605,63 @@ class CalorieTracker {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 400);
         }, 2500);
+    }
+
+    // ==================== BİLDİRİMLER ====================
+
+    scheduleReminder() {
+        if (!('Notification' in window)) return;
+
+        const doSchedule = () => this.scheduleNext22();
+
+        if (Notification.permission === 'granted') {
+            doSchedule();
+        } else if (Notification.permission !== 'denied') {
+            // İzni 4 saniye sonra iste
+            setTimeout(async () => {
+                const result = await Notification.requestPermission();
+                if (result === 'granted') doSchedule();
+            }, 4000);
+        }
+    }
+
+    scheduleNext22() {
+        const now  = new Date();
+        const next = new Date();
+        next.setHours(22, 0, 0, 0);
+
+        // 22:00 geçtiyse yarına planla
+        if (now >= next) next.setDate(next.getDate() + 1);
+
+        const msUntil = next.getTime() - now.getTime();
+
+        localStorage.setItem('kaloriTakip_reminderScheduled', this.todayKey);
+
+        clearTimeout(this._reminderTimer);
+        this._reminderTimer = setTimeout(() => {
+            this.fireReminder();
+            // Ertesi gün için yeniden zamanla
+            setTimeout(() => this.scheduleNext22(), 60_000);
+        }, msUntil);
+
+        console.log(`[KaloriTakip] Hatırlatma ${Math.round(msUntil / 60000)} dakika sonra.`);
+    }
+
+    fireReminder() {
+        // Bugün zaten kayıt varsa bildirim atma
+        if (this.readLog(this.todayKey).length > 0) return;
+
+        const title = '🔥 KaloriTakip';
+        const body  = 'Yemeklerini girdin mi? Bugünün kalorilerini kaydetmeyi unutma!';
+        const icon  = './icons/icon-192.png';
+
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage(
+                { type: 'SHOW_NOTIFICATION', title, body, icon }
+            );
+        } else {
+            new Notification(title, { body, icon });
+        }
     }
 }
 

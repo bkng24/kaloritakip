@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaloritakip-v1';
+const CACHE_NAME = 'kaloritakip-v2';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -76,5 +76,37 @@ self.addEventListener('fetch', (event) => {
                     return response;
                 });
             })
+    );
+});
+
+// Bildirim mesajlarını dinle (app.js → SW)
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+        const { title, body, icon } = event.data;
+        event.waitUntil(
+            self.registration.showNotification(title, {
+                body,
+                icon,
+                badge: './icons/icon-32.png',
+                tag: 'daily-reminder',
+                renotify: false,
+                vibrate: [200, 100, 200],
+            })
+        );
+    }
+});
+
+// Bildirime tıklanınca uygulamayı aç
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+            for (const client of clientList) {
+                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            return clients.openWindow('./');
+        })
     );
 });
