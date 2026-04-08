@@ -225,6 +225,105 @@ const FOOD_DATABASE = [
     { isim: "french toast", aliases: ["french toast", "yumurtalı ekmek"], kalori: 200, birim: "dilim", miktar: 80 },
     { isim: "acuka", aliases: ["acuka"], kalori: 80, birim: "yemek kaşığı", miktar: 30 },
     { isim: "mühammara", aliases: ["mühammara"], kalori: 100, birim: "yemek kaşığı", miktar: 30 },
+    { isim: "humus", aliases: ["humus", "hummus"], kalori: 166, birim: "porsiyon", miktar: 100 },
+    { isim: "ezme", aliases: ["ezme", "acı ezme", "domates ezme"], kalori: 60, birim: "porsiyon", miktar: 100 },
+    { isim: "sigara böreği", aliases: ["sigara böreği", "sigara boregi"], kalori: 120, birim: "adet", miktar: 50 },
+
+    // ==================== ZEYTİNYAĞLI YEMEKLER ====================
+    { isim: "zeytinyağlı kereviz", aliases: ["kereviz", "zeytinyağlı kereviz", "kereviz yemeği"], kalori: 130, birim: "porsiyon", miktar: 250 },
+    { isim: "zeytinyağlı enginar", aliases: ["enginar", "zeytinyağlı enginar"], kalori: 120, birim: "porsiyon", miktar: 200 },
+    { isim: "zeytinyağlı pırasa", aliases: ["pırasa", "zeytinyağlı pırasa", "pırasa yemeği"], kalori: 150, birim: "porsiyon", miktar: 250 },
+    { isim: "zeytinyağlı taze fasulye", aliases: ["zeytinyağlı taze fasulye", "zeytinyağlı fasulye"], kalori: 110, birim: "porsiyon", miktar: 200 },
+    { isim: "zeytinyağlı bakla", aliases: ["bakla", "zeytinyağlı bakla", "taze bakla"], kalori: 140, birim: "porsiyon", miktar: 200 },
+    { isim: "zeytinyağlı bamya", aliases: ["bamya", "zeytinyağlı bamya", "bamya yemeği"], kalori: 100, birim: "porsiyon", miktar: 200 },
+
+    // ==================== ETLİ SEBZE YEMEKLERİ ====================
+    { isim: "etli kuru fasülye", aliases: ["etli kuru fasülye", "kurufalsuye etli"], kalori: 280, birim: "porsiyon", miktar: 250 },
+    { isim: "etli nohut", aliases: ["etli nohut", "nohut yemeği etli"], kalori: 280, birim: "porsiyon", miktar: 250 },
+    { isim: "etli barbunya", aliases: ["etli barbunya", "barbunya yemeği etli"], kalori: 270, birim: "porsiyon", miktar: 250 },
+    { isim: "etli türlü", aliases: ["etli türlü", "türlü etli"], kalori: 300, birim: "porsiyon", miktar: 350 },
+    { isim: "etli biber dolma", aliases: ["etli dolma", "etli biber dolma", "kıymalı dolma"], kalori: 280, birim: "porsiyon", miktar: 250 },
+    { isim: "musakka", aliases: ["musakka", "fırın musakka"], kalori: 350, birim: "porsiyon", miktar: 300 },
+    { isim: "terbiyeli köfte", aliases: ["terbiyeli köfte", "sulu köfte", "soğanlı köfte"], kalori: 280, birim: "porsiyon", miktar: 250 },
+    { isim: "sahan köfte", aliases: ["sahan köfte", "fırın köfte"], kalori: 300, birim: "porsiyon", miktar: 200 },
+    { isim: "dalyan köfte", aliases: ["dalyan köfte"], kalori: 320, birim: "porsiyon", miktar: 200 },
+    { isim: "izmir köfte", aliases: ["izmir köfte", "izmır koftesi", "patatesli köfte"], kalori: 420, birim: "porsiyon", miktar: 300 },
+
+    // ==================== PİLAV ÇEŞİTLERİ ====================
+    { isim: "nohutlu pirinç pilavı", aliases: ["nohutlu pilav", "nohutlu pirinç", "pirinç pilavı nohutlu"], kalori: 230, birim: "porsiyon", miktar: 200 },
+    { isim: "domatesli bulgur pilavı", aliases: ["domatesli bulgur", "kırmızı bulgur", "bulgur pilavı domatesli"], kalori: 190, birim: "porsiyon", miktar: 200 },
+    { isim: "şehriyeli pilav", aliases: ["şehriyeli pilav", "şehriyeli pirinç", "sehriyeli pilav"], kalori: 220, birim: "porsiyon", miktar: 200 },
+    { isim: "mercimekli pilav", aliases: ["mercimekli pilav", "mercimekli pirinç", "müceddera"], kalori: 210, birim: "porsiyon", miktar: 200 },
+    { isim: "iç pilav", aliases: ["iç pilav", "ic pilav", "saray pilavı"], kalori: 280, birim: "porsiyon", miktar: 200 },
+
+    // ==================== ÇORBA ÇEŞİTLERİ ====================
+    { isim: "sütlü çorba", aliases: ["sütlü çorba", "sutlu corba"], kalori: 130, birim: "kase", miktar: 250 },
+    { isim: "mercimek çorbası kırmızı", aliases: ["kırmızı mercimek çorbası"], kalori: 140, birim: "kase", miktar: 250 },
+    { isim: "sebze çorbası", aliases: ["sebze çorbası", "sebze corba"], kalori: 90, birim: "kase", miktar: 250 },
+    { isim: "doğu çorbası", aliases: ["doğu çorbası", "toyga çorbası"], kalori: 120, birim: "kase", miktar: 250 },
+    { isim: "lahana çorbası", aliases: ["lahana çorbası", "kapuska çorba"], kalori: 100, birim: "kase", miktar: 250 },
+    { isim: "analı kızlı çorba", aliases: ["analı kızlı", "nişastalı çorba"], kalori: 160, birim: "kase", miktar: 250 },
+
+    // ==================== SEBZE EKLEMELERİ ====================
+    { isim: "lahana", aliases: ["lahana", "beyaz lahana", "kırmızı lahana"], kalori: 25, birim: "porsiyon", miktar: 150 },
+    { isim: "kapuska", aliases: ["kapuska", "lahana kavurması", "lahana yemeği"], kalori: 120, birim: "porsiyon", miktar: 200 },
+    { isim: "pancar", aliases: ["pancar", "kırmızı pancar", "haşlanmış pancar"], kalori: 44, birim: "adet", miktar: 100 },
+    { isim: "semizotu", aliases: ["semizotu", "semiz otu"], kalori: 20, birim: "porsiyon", miktar: 100 },
+    { isim: "roka", aliases: ["roka"], kalori: 25, birim: "porsiyon", miktar: 100 },
+    { isim: "dereotu", aliases: ["dereotu", "dere otu"], kalori: 5, birim: "yemek kaşığı", miktar: 10 },
+    { isim: "maydanoz", aliases: ["maydanoz"], kalori: 5, birim: "yemek kaşığı", miktar: 10 },
+    { isim: "taze soğan", aliases: ["taze soğan", "yeşil soğan", "taze sogan"], kalori: 10, birim: "adet", miktar: 30 },
+    { isim: "sarımsak", aliases: ["sarımsak", "sarimsak"], kalori: 15, birim: "diş", miktar: 5 },
+    { isim: "kuşkonmaz", aliases: ["kuşkonmaz", "asparagus"], kalori: 20, birim: "porsiyon", miktar: 100 },
+    { isim: "brokoli salatası", aliases: ["brokoli salatası", "buharda brokoli"], kalori: 60, birim: "porsiyon", miktar: 150 },
+    { isim: "tabule", aliases: ["tabule", "tabuleh"], kalori: 100, birim: "porsiyon", miktar: 150 },
+
+    // ==================== BAKLAGİLLER ====================
+    { isim: "mercimek köftesi", aliases: ["mercimek köftesi", "mercimek koftesi", "mercimekli köfte"], kalori: 180, birim: "porsiyon", miktar: 150 },
+    { isim: "nohut köftesi", aliases: ["nohut köftesi", "falafel", "nohutlu köfte"], kalori: 200, birim: "porsiyon", miktar: 150 },
+    { isim: "mercimek salatası", aliases: ["mercimek salatası", "yeşil mercimek salatası"], kalori: 160, birim: "porsiyon", miktar: 200 },
+    { isim: "nohut salatası", aliases: ["nohut salatası"], kalori: 180, birim: "porsiyon", miktar: 200 },
+    { isim: "fasulye piyazı", aliases: ["fasulye piyazı", "piyaz", "fasulyeli piyaz"], kalori: 180, birim: "porsiyon", miktar: 200 },
+
+    // ==================== DENİZ ÜRÜNLERİ ====================
+    { isim: "hamsi tava", aliases: ["hamsi tava", "kızarmış hamsi", "hamsi kızartma"], kalori: 250, birim: "porsiyon", miktar: 150 },
+    { isim: "balık buğulama", aliases: ["balık buğulama", "buğulama"], kalori: 170, birim: "porsiyon", miktar: 200 },
+    { isim: "ahtapot", aliases: ["ahtapot", "ızgara ahtapot"], kalori: 140, birim: "porsiyon", miktar: 150 },
+    { isim: "kalamar", aliases: ["kalamar", "kalamar tava", "kalamar ızgara"], kalori: 180, birim: "porsiyon", miktar: 150 },
+
+    // ==================== DÜNYA MUTFAĞI ====================
+    { isim: "sushi", aliases: ["sushi", "japon yemeği"], kalori: 40, birim: "adet", miktar: 25 },
+    { isim: "ramen", aliases: ["ramen", "japon çorbası"], kalori: 450, birim: "kase", miktar: 400 },
+    { isim: "burrito", aliases: ["burrito", "meksika burrito"], kalori: 500, birim: "adet", miktar: 300 },
+    { isim: "tavuk curry", aliases: ["curry", "tavuk curry", "hint yemeği", "hindistan cevizi kremalı"], kalori: 380, birim: "porsiyon", miktar: 300 },
+    { isim: "pad thai", aliases: ["pad thai", "tayland makarnası"], kalori: 400, birim: "porsiyon", miktar: 300 },
+    { isim: "risotto", aliases: ["risotto", "mantar risotto"], kalori: 350, birim: "porsiyon", miktar: 300 },
+    { isim: "lazanya", aliases: ["lazanya", "lasagna"], kalori: 400, birim: "porsiyon", miktar: 250 },
+
+    // ==================== MEYVELER (EK) ====================
+    { isim: "greyfurt", aliases: ["greyfurt", "grapefruit"], kalori: 52, birim: "adet", miktar: 200 },
+    { isim: "limon", aliases: ["limon"], kalori: 15, birim: "adet", miktar: 70 },
+    { isim: "çilek vişne karışım", aliases: ["vişne", "kiraz vişne", "kırmızı meyveler"], kalori: 60, birim: "kase", miktar: 150 },
+    { isim: "kuru kayısı", aliases: ["kuru kayısı", "kayısı kurusu"], kalori: 48, birim: "adet", miktar: 18 },
+    { isim: "kuru erik", aliases: ["kuru erik", "erik kurusu", "prune"], kalori: 67, birim: "adet", miktar: 28 },
+    { isim: "mango", aliases: ["mango"], kalori: 130, birim: "adet", miktar: 200 },
+    { isim: "papaya", aliases: ["papaya"], kalori: 120, birim: "dilim", miktar: 200 },
+    { isim: "kivi", aliases: ["kivi", "kiwi"], kalori: 42, birim: "adet", miktar: 75 },
+    { isim: "böğürtlen", aliases: ["böğürtlen", "blackberry"], kalori: 43, birim: "kase", miktar: 100 },
+    { isim: "ahududu", aliases: ["ahududu", "raspberry"], kalori: 53, birim: "kase", miktar: 100 },
+    { isim: "yaban mersini", aliases: ["yaban mersini", "blueberry", "mavi yemiş"], kalori: 57, birim: "kase", miktar: 100 },
+
+    // ==================== SPOR & FİTNESS ====================
+    { isim: "yulaf ezmesi proteinli", aliases: ["proteinli yulaf", "yulaf + protein"], kalori: 250, birim: "kase", miktar: 80 },
+    { isim: "haşlanmış yumurta akı", aliases: ["yumurta akı", "egg white", "beyaz yumurta"], kalori: 17, birim: "adet", miktar: 30 },
+    { isim: "cottage cheese", aliases: ["cottage cheese", "lor", "süzme"], kalori: 98, birim: "kase", miktar: 100 },
+    { isim: "greek yoğurt", aliases: ["greek yoğurt", "süzme yoğurt", "thick yogurt", "kefir yoğurt"], kalori: 100, birim: "kase", miktar: 150 },
+    { isim: "fıstık ezmesi", aliases: ["fıstık ezmesi", "peanut butter", "yer fistigi ezmesi"], kalori: 190, birim: "yemek kaşığı", miktar: 32 },
+    { isim: "badem ezmesi", aliases: ["badem ezmesi", "almond butter"], kalori: 196, birim: "yemek kaşığı", miktar: 32 },
+    { isim: "chia tohumu", aliases: ["chia tohumu", "chia", "chia seed"], kalori: 60, birim: "yemek kaşığı", miktar: 15 },
+    { isim: "keten tohumu", aliases: ["keten tohumu", "flaxseed", "keten"], kalori: 55, birim: "yemek kaşığı", miktar: 15 },
+    { isim: "kinoa", aliases: ["kinoa", "quinoa"], kalori: 222, birim: "kase", miktar: 185 },
+    { isim: "energy bar", aliases: ["energy bar", "protein bar", "enerji barı", "bar"], kalori: 200, birim: "adet", miktar: 50 },
 ];
 
 // Birim dönüştürme tablosu (Türkçe birimleri)
