@@ -2,7 +2,7 @@
     "name": "KaloriTakip - Günlük Kalori Hesaplayıcı",
     "short_name": "KaloriTakip",
     "description": "Yediklerini yaz, yapay zeka kalorilerini hesaplasın. Günlük kalori takip uygulaması.",
-    "start_url": "/",
+    "start_url": "./",
     "display": "standalone",
     "background_color": "#0a0a0f",
     "theme_color": "#0a0a0f",
