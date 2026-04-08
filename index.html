@@ -130,9 +130,18 @@
         <!-- Archive Section -->
         <div class="archive-section">
             <h2 class="section-title">Arşiv</h2>
-            <div class="date-picker-wrapper">
-                <label for="archiveDate" class="date-label">Tarih:</label>
-                <input type="date" id="archiveDate" class="date-input">
+            <div class="calendar" id="calendar">
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" id="prevMonthBtn">&lt;</button>
+                    <h3 class="calendar-month-year" id="calendarMonthYear"></h3>
+                    <button class="calendar-nav-btn" id="nextMonthBtn">&gt;</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <span>Pt</span><span>Sa</span><span>Ça</span><span>Pe</span><span>Cu</span><span>Ct</span><span>Pz</span>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Days dynamically inserted here -->
+                </div>
             </div>
             <div class="archive-list" id="archiveList">
                 <p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>

@@ -8,10 +8,17 @@ class CalorieTracker {
         this.todayLog = this.loadTodayLog();
         this.currentResults = [];
         
+        const now = new Date();
+        this.currentMonth = now.getMonth();
+        this.currentYear = now.getFullYear();
+        this.selectedArchiveDate = this.getTodayKey();
+        
         this.initElements();
         this.initEvents();
         this.calculateTarget();
         this.updateUI();
+        this.renderCalendar();
+        this.loadArchiveForSelectedDate();
         this.addSVGGradient();
     }
 
@@ -44,7 +51,11 @@ class CalorieTracker {
         this.clearBtn = document.getElementById('clearBtn');
 
         // Archive UI
-        this.archiveDate = document.getElementById('archiveDate');
+        this.calendarMonthYear = document.getElementById('calendarMonthYear');
+        this.prevMonthBtn = document.getElementById('prevMonthBtn');
+        this.nextMonthBtn = document.getElementById('nextMonthBtn');
+        this.calendarGrid = document.getElementById('calendarGrid');
+
         this.archiveList = document.getElementById('archiveList');
         this.deleteDayBtn = document.getElementById('deleteDayBtn');
 
@@ -90,8 +101,69 @@ class CalorieTracker {
         });
 
         // Archive interactions
-        this.archiveDate.addEventListener('change', () => this.loadArchiveForSelectedDate());
+        this.prevMonthBtn.addEventListener('click', () => {
+            this.currentMonth--;
+            if (this.currentMonth < 0) {
+                this.currentMonth = 11;
+                this.currentYear--;
+            }
+            this.renderCalendar();
+        });
+        
+        this.nextMonthBtn.addEventListener('click', () => {
+            this.currentMonth++;
+            if (this.currentMonth > 11) {
+                this.currentMonth = 0;
+                this.currentYear++;
+            }
+            this.renderCalendar();
+        });
+
         this.deleteDayBtn.addEventListener('click', () => this.deleteArchiveDay());
+    }
+
+    renderCalendar() {
+        const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+        this.calendarMonthYear.textContent = `${months[this.currentMonth]} ${this.currentYear}`;
+        
+        this.calendarGrid.innerHTML = '';
+        
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
+        const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+        
+        const startDay = firstDay === 0 ? 6 : firstDay - 1;
+        
+        // Empty slots
+        for (let i = 0; i < startDay; i++) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'calendar-day empty';
+            this.calendarGrid.appendChild(emptyDiv);
+        }
+        
+        // Day slots
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day';
+            dayDiv.textContent = i;
+            
+            const dateStr = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            
+            if (this.selectedArchiveDate === dateStr) {
+                dayDiv.classList.add('selected');
+            }
+            
+            if (localStorage.getItem(`kaloriTakip_log_${dateStr}`)) {
+                dayDiv.classList.add('has-log');
+            }
+            
+            dayDiv.addEventListener('click', () => {
+                this.selectedArchiveDate = dateStr;
+                this.renderCalendar();
+                this.loadArchiveForSelectedDate();
+            });
+            
+            this.calendarGrid.appendChild(dayDiv);
+        }
     }
 
     addSVGGradient() {
@@ -497,13 +569,12 @@ class CalorieTracker {
 
     // ==================== ARCHIVE ====================
     loadArchiveForSelectedDate() {
-        const dateVal = this.archiveDate.value;
-        if (!dateVal) {
+        const key = this.selectedArchiveDate;
+        if (!key) {
             this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
             this.deleteDayBtn.style.display = 'none';
             return;
         }
-        const key = this.getDateKey(dateVal);
         const log = this.loadLogForKey(key);
         this.renderArchiveList(log);
         this.deleteDayBtn.style.display = log.length ? 'block' : 'none';
@@ -532,11 +603,11 @@ class CalorieTracker {
     }
 
     deleteArchiveDay() {
-        const dateVal = this.archiveDate.value;
-        if (!dateVal) return;
+        const key = this.selectedArchiveDate;
+        if (!key) return;
         if (confirm('Seçilen günün tüm kayıtlarını silmek istediğinize emin misiniz?')) {
-            const key = this.getDateKey(dateVal);
             localStorage.removeItem(`kaloriTakip_log_${key}`);
+            this.renderCalendar();
             this.loadArchiveForSelectedDate();
             this.showToast('Günlük silindi!', 'success');
         }
