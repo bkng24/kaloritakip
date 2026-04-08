@@ -4,365 +4,239 @@
 
 const LS_PREFIX = 'kaloriTakip_';
 
+const TR_MONTHS = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                   "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+const TR_DAYS   = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
 class CalorieTracker {
     constructor() {
-        this.settings = this.getDefaultSettings();
-        this.todayLog = [];
+        this.settings    = this.getDefaultSettings();
+        this.activeLog   = [];           // log for the currently selected date
         this.currentResults = [];
-        this.deferredPrompt = null;
         
         const now = new Date();
-        this.currentMonth = now.getMonth();
-        this.currentYear = now.getFullYear();
-        this.selectedArchiveDate = this.getTodayKey();
+        this.todayKey       = this.getDateKey(now);
+        this.activeDate     = this.todayKey;   // which date is being viewed/edited
+        this.currentMonth   = now.getMonth();
+        this.currentYear    = now.getFullYear();
         
         this.initElements();
         this.initEvents();
         this.addSVGGradient();
-        
         this.init();
     }
 
     getDefaultSettings() {
-        return {
-            age: 30,
-            gender: 'male',
-            height: 186,
-            weight: 143,
-            activity: 1.375,
-            goal: 'lose',
-            targetCalories: 2400
-        };
+        return { age: 30, gender: 'male', height: 186, weight: 143,
+                 activity: 1.375, goal: 'lose', targetCalories: 2400 };
     }
 
     init() {
         this.loadSettings();
-        this.loadTodayLog();
-        
         this.calculateTarget();
-        this.updateUI();
+        this.loadActiveLog();   // loads activeDate's log → updates UI
         this.renderCalendar();
-        this.loadArchiveForSelectedDate();
     }
 
-    // ==================== INITIALIZATION ====================
-    
+    // ==================== ELEMENT REFS ====================
+
     initElements() {
-        // Stats
-        this.targetEl = document.getElementById('targetCalories');
-        this.consumedEl = document.getElementById('consumedCalories');
-        this.remainingEl = document.getElementById('remainingCalories');
+        this.targetEl     = document.getElementById('targetCalories');
+        this.consumedEl   = document.getElementById('consumedCalories');
+        this.remainingEl  = document.getElementById('remainingCalories');
 
-        // Progress
-        this.progressRing = document.getElementById('progressRing');
+        this.progressRing    = document.getElementById('progressRing');
         this.progressPercent = document.getElementById('progressPercent');
-        this.progressLabel = document.getElementById('progressLabel');
-        this.statusBadge = document.getElementById('statusBadge');
+        this.progressLabel   = document.getElementById('progressLabel');
+        this.statusBadge     = document.getElementById('statusBadge');
 
-        // Input
-        this.foodInput = document.getElementById('foodInput');
+        this.foodInput    = document.getElementById('foodInput');
         this.calculateBtn = document.getElementById('calculateBtn');
 
-        // Results
         this.resultsSection = document.getElementById('resultsSection');
-        this.resultsList = document.getElementById('resultsList');
-        this.totalCalories = document.getElementById('totalCalories');
-        this.addBtn = document.getElementById('addBtn');
+        this.resultsList    = document.getElementById('resultsList');
+        this.totalCalories  = document.getElementById('totalCalories');
+        this.addBtn         = document.getElementById('addBtn');
 
-        // Log (today)
-        this.logList = document.getElementById('logList');
-        this.logEmpty = document.getElementById('logEmpty');
+        this.logList  = document.getElementById('logList');
         this.clearBtn = document.getElementById('clearBtn');
 
-        // Archive UI
-        this.calendarMonthYear = document.getElementById('calendarMonthYear');
-        this.prevMonthBtn = document.getElementById('prevMonthBtn');
-        this.nextMonthBtn = document.getElementById('nextMonthBtn');
-        this.calendarGrid = document.getElementById('calendarGrid');
-        
-        this.archiveSummary = document.getElementById('archiveSummary');
-        this.archiveTarget = document.getElementById('archiveTarget');
-        this.archiveConsumed = document.getElementById('archiveConsumed');
-        this.archiveRemaining = document.getElementById('archiveRemaining');
-        this.archiveRemainingCard = document.getElementById('archiveRemainingCard');
+        // Date header inside log section
+        this.logDateLabel = document.getElementById('logDateLabel');
+        this.todayBackBtn = document.getElementById('todayBackBtn');
 
-        this.archiveList = document.getElementById('archiveList');
-        this.deleteDayBtn = document.getElementById('deleteDayBtn');
+        // Input section subtitle
+        this.inputDateLabel = document.getElementById('inputDateLabel');
+
+        // Calendar
+        this.calendarMonthYear = document.getElementById('calendarMonthYear');
+        this.prevMonthBtn      = document.getElementById('prevMonthBtn');
+        this.nextMonthBtn      = document.getElementById('nextMonthBtn');
+        this.calendarGrid      = document.getElementById('calendarGrid');
 
         // Settings
-        this.settingsBtn = document.getElementById('settingsBtn');
-        this.settingsModal = document.getElementById('settingsModal');
-        this.closeModal = document.getElementById('closeModal');
-        this.saveSettingsBtn = document.getElementById('saveSettings');
+        this.settingsBtn        = document.getElementById('settingsBtn');
+        this.settingsModal      = document.getElementById('settingsModal');
+        this.closeModal         = document.getElementById('closeModal');
+        this.saveSettingsBtn    = document.getElementById('saveSettings');
         this.calculatedTargetEl = document.getElementById('calculatedTarget');
-
-        // Settings inputs
-        this.inputAge = document.getElementById('inputAge');
-        this.inputGender = document.getElementById('inputGender');
-        this.inputHeight = document.getElementById('inputHeight');
-        this.inputWeight = document.getElementById('inputWeight');
+        this.inputAge      = document.getElementById('inputAge');
+        this.inputGender   = document.getElementById('inputGender');
+        this.inputHeight   = document.getElementById('inputHeight');
+        this.inputWeight   = document.getElementById('inputWeight');
         this.inputActivity = document.getElementById('inputActivity');
-        this.inputGoal = document.getElementById('inputGoal');
-        
-        // PWA Install
-        this.installBanner = document.getElementById('installBanner');
-        this.installBtn = document.getElementById('installBtn');
+        this.inputGoal     = document.getElementById('inputGoal');
+
+        // PWA
+        this.installBanner  = document.getElementById('installBanner');
+        this.installBtn     = document.getElementById('installBtn');
         this.installDismiss = document.getElementById('installDismiss');
     }
 
+    // ==================== EVENTS ====================
 
     initEvents() {
         this.calculateBtn.addEventListener('click', () => this.handleCalculate());
-        this.addBtn.addEventListener('click', () => this.addToLog());
-        this.clearBtn.addEventListener('click', () => this.clearLog());
-        
-        this.settingsBtn.addEventListener('click', () => this.openSettings());
-        this.closeModal.addEventListener('click', () => this.closeSettings());
-        this.settingsModal.addEventListener('click', (e) => {
+        this.addBtn.addEventListener('click',       () => this.addToLog());
+        this.clearBtn.addEventListener('click',     () => this.clearLog());
+
+        this.todayBackBtn.addEventListener('click', () => {
+            this.setActiveDate(this.todayKey);
+            // Jump calendar to current month if needed
+            const now = new Date();
+            this.currentMonth = now.getMonth();
+            this.currentYear  = now.getFullYear();
+            this.renderCalendar();
+        });
+
+        this.settingsBtn.addEventListener('click',  () => this.openSettings());
+        this.closeModal.addEventListener('click',   () => this.closeSettings());
+        this.settingsModal.addEventListener('click', e => {
             if (e.target === this.settingsModal) this.closeSettings();
         });
         this.saveSettingsBtn.addEventListener('click', () => this.saveSettings());
-        
-        // Real-time target calculation in settings
-        ['inputAge', 'inputGender', 'inputHeight', 'inputWeight', 'inputActivity', 'inputGoal'].forEach(id => {
+
+        ['inputAge','inputGender','inputHeight','inputWeight','inputActivity','inputGoal'].forEach(id => {
             document.getElementById(id).addEventListener('change', () => this.updateCalculatedTarget());
         });
-        
-        // Keyboard shortcut
-        this.foodInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                this.handleCalculate();
-            }
+
+        this.foodInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && e.ctrlKey) this.handleCalculate();
         });
 
-        // Archive interactions
         this.prevMonthBtn.addEventListener('click', () => {
             this.currentMonth--;
-            if (this.currentMonth < 0) {
-                this.currentMonth = 11;
-                this.currentYear--;
-            }
+            if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
             this.renderCalendar();
         });
-        
         this.nextMonthBtn.addEventListener('click', () => {
             this.currentMonth++;
-            if (this.currentMonth > 11) {
-                this.currentMonth = 0;
-                this.currentYear++;
-            }
+            if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
             this.renderCalendar();
         });
-
-        this.deleteDayBtn.addEventListener('click', () => this.deleteArchiveDay());
     }
 
-    // ==================== LOCALSTORAGE HELPERS ====================
+    // ==================== ACTIVE DATE ====================
+
+    setActiveDate(date) {
+        this.activeDate = date;
+        this.loadActiveLog();
+        this.renderCalendar();
+    }
+
+    loadActiveLog() {
+        this.activeLog = this.readLog(this.activeDate);
+        this.updateUI();
+    }
+
+    // ==================== LOCALSTORAGE ====================
+
+    readLog(dateKey) {
+        try { return JSON.parse(localStorage.getItem(LS_PREFIX + 'log_' + dateKey)) || []; }
+        catch { return []; }
+    }
+
+    writeLog(dateKey, data) {
+        localStorage.setItem(LS_PREFIX + 'log_' + dateKey, JSON.stringify(data));
+    }
+
+    deleteLog(dateKey) {
+        localStorage.removeItem(LS_PREFIX + 'log_' + dateKey);
+    }
 
     getAllLogKeys() {
         const keys = [];
         for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith(LS_PREFIX + 'log_')) {
-                // Extract date part: kaloriTakip_log_YYYY-MM-DD
-                const dateKey = key.replace(LS_PREFIX + 'log_', '');
-                if (/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
-                    keys.push(dateKey);
-                }
+            const k = localStorage.key(i);
+            if (k && k.startsWith(LS_PREFIX + 'log_')) {
+                const d = k.replace(LS_PREFIX + 'log_', '');
+                if (/^\d{4}-\d{2}-\d{2}$/.test(d)) keys.push(d);
             }
         }
         return keys;
     }
 
-    loadLogForKey(key) {
-        const raw = localStorage.getItem(LS_PREFIX + 'log_' + key);
-        if (raw) {
-            try {
-                return JSON.parse(raw) || [];
-            } catch (e) {
-                return [];
-            }
-        }
-        return [];
-    }
-
-    saveLogForKey(key, data) {
-        localStorage.setItem(LS_PREFIX + 'log_' + key, JSON.stringify(data));
-    }
-
-    deleteLogForKey(key) {
-        localStorage.removeItem(LS_PREFIX + 'log_' + key);
-    }
-
-    // ==================== CALENDAR ====================
-
-    renderCalendar() {
-        const logKeys = this.getAllLogKeys();
-        
-        const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
-        this.calendarMonthYear.textContent = `${months[this.currentMonth]} ${this.currentYear}`;
-        
-        this.calendarGrid.innerHTML = '';
-        
-        const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
-        const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
-        
-        const startDay = firstDay === 0 ? 6 : firstDay - 1;
-        
-        // Empty slots
-        for (let i = 0; i < startDay; i++) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'calendar-day empty';
-            this.calendarGrid.appendChild(emptyDiv);
-        }
-        
-        // Day slots
-        for (let i = 1; i <= daysInMonth; i++) {
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'calendar-day';
-            dayDiv.textContent = i;
-            
-            const dateStr = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-            
-            if (this.selectedArchiveDate === dateStr) {
-                dayDiv.classList.add('selected');
-            }
-            
-            if (logKeys.includes(dateStr)) {
-                dayDiv.classList.add('has-log');
-            }
-            
-            dayDiv.addEventListener('click', () => {
-                this.selectedArchiveDate = dateStr;
-                this.renderCalendar();
-                this.loadArchiveForSelectedDate();
-            });
-            
-            this.calendarGrid.appendChild(dayDiv);
-        }
-    }
-
-    addSVGGradient() {
-        const svg = document.querySelector('.progress-ring');
-        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-        gradient.setAttribute('id', 'progressGradient');
-        gradient.setAttribute('x1', '0%');
-        gradient.setAttribute('y1', '0%');
-        gradient.setAttribute('x2', '100%');
-        gradient.setAttribute('y2', '100%');
-        
-        const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-        stop1.setAttribute('offset', '0%');
-        stop1.setAttribute('stop-color', '#8b5cf6');
-        
-        const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-        stop2.setAttribute('offset', '100%');
-        stop2.setAttribute('stop-color', '#10b981');
-        
-        gradient.appendChild(stop1);
-        gradient.appendChild(stop2);
-        defs.appendChild(gradient);
-        svg.insertBefore(defs, svg.firstChild);
-    }
-
     // ==================== SETTINGS ====================
-    
+
     loadSettings() {
-        const raw = localStorage.getItem(LS_PREFIX + 'settings');
-        if (raw) {
-            try {
-                this.settings = JSON.parse(raw);
-            } catch (e) {
-                this.settings = this.getDefaultSettings();
-            }
-        }
+        try {
+            const raw = localStorage.getItem(LS_PREFIX + 'settings');
+            if (raw) this.settings = JSON.parse(raw);
+        } catch { this.settings = this.getDefaultSettings(); }
     }
 
     openSettings() {
-        this.inputAge.value = this.settings.age;
-        this.inputGender.value = this.settings.gender;
-        this.inputHeight.value = this.settings.height;
-        this.inputWeight.value = this.settings.weight;
+        this.inputAge.value      = this.settings.age;
+        this.inputGender.value   = this.settings.gender;
+        this.inputHeight.value   = this.settings.height;
+        this.inputWeight.value   = this.settings.weight;
         this.inputActivity.value = this.settings.activity;
-        this.inputGoal.value = this.settings.goal;
+        this.inputGoal.value     = this.settings.goal;
         this.updateCalculatedTarget();
         this.settingsModal.classList.add('active');
     }
 
-    closeSettings() {
-        this.settingsModal.classList.remove('active');
-    }
+    closeSettings() { this.settingsModal.classList.remove('active'); }
 
     calculateBMR(age, gender, height, weight) {
-        // Mifflin-St Jeor Equation
-        if (gender === 'male') {
-            return 10 * weight + 6.25 * height - 5 * age + 5;
-        } else {
-            return 10 * weight + 6.25 * height - 5 * age - 161;
-        }
+        return gender === 'male'
+            ? 10 * weight + 6.25 * height - 5 * age + 5
+            : 10 * weight + 6.25 * height - 5 * age - 161;
     }
 
-    calculateTDEE(bmr, activity) {
-        return bmr * activity;
-    }
+    calculateTDEE(bmr, activity) { return bmr * activity; }
 
     calculateTarget() {
-        const bmr = this.calculateBMR(
-            this.settings.age,
-            this.settings.gender,
-            this.settings.height,
-            this.settings.weight
-        );
+        const bmr  = this.calculateBMR(this.settings.age, this.settings.gender,
+                                        this.settings.height, this.settings.weight);
         const tdee = this.calculateTDEE(bmr, this.settings.activity);
-        
-        let target;
-        switch (this.settings.goal) {
-            case 'lose':
-                target = tdee - 750;
-                break;
-            case 'gain':
-                target = tdee + 500;
-                break;
-            default:
-                target = tdee;
-        }
-        
-        this.settings.targetCalories = Math.round(target);
+        const offs = this.settings.goal === 'lose' ? -750 : this.settings.goal === 'gain' ? 500 : 0;
+        this.settings.targetCalories = Math.round(tdee + offs);
     }
 
     updateCalculatedTarget() {
-        const age = parseInt(this.inputAge.value) || 30;
-        const gender = this.inputGender.value;
-        const height = parseInt(this.inputHeight.value) || 186;
-        const weight = parseInt(this.inputWeight.value) || 143;
+        const age      = parseInt(this.inputAge.value) || 30;
+        const gender   = this.inputGender.value;
+        const height   = parseInt(this.inputHeight.value) || 186;
+        const weight   = parseInt(this.inputWeight.value) || 143;
         const activity = parseFloat(this.inputActivity.value) || 1.375;
-        const goal = this.inputGoal.value;
-        
-        const bmr = this.calculateBMR(age, gender, height, weight);
-        const tdee = this.calculateTDEE(bmr, activity);
-        
-        let target;
-        switch (goal) {
-            case 'lose': target = tdee - 750; break;
-            case 'gain': target = tdee + 500; break;
-            default: target = tdee;
-        }
-        
-        this.calculatedTargetEl.textContent = Math.round(target) + ' kcal';
+        const goal     = this.inputGoal.value;
+        const bmr      = this.calculateBMR(age, gender, height, weight);
+        const tdee     = this.calculateTDEE(bmr, activity);
+        const offs     = goal === 'lose' ? -750 : goal === 'gain' ? 500 : 0;
+        this.calculatedTargetEl.textContent = Math.round(tdee + offs) + ' kcal';
     }
 
     saveSettings() {
         this.settings = {
-            age: parseInt(this.inputAge.value) || 30,
-            gender: this.inputGender.value,
-            height: parseInt(this.inputHeight.value) || 186,
-            weight: parseInt(this.inputWeight.value) || 143,
+            age:      parseInt(this.inputAge.value) || 30,
+            gender:   this.inputGender.value,
+            height:   parseInt(this.inputHeight.value) || 186,
+            weight:   parseInt(this.inputWeight.value) || 143,
             activity: parseFloat(this.inputActivity.value) || 1.375,
-            goal: this.inputGoal.value,
+            goal:     this.inputGoal.value,
             targetCalories: this.settings.targetCalories
         };
-        
         this.calculateTarget();
         localStorage.setItem(LS_PREFIX + 'settings', JSON.stringify(this.settings));
         this.updateUI();
@@ -371,206 +245,105 @@ class CalorieTracker {
     }
 
     // ==================== FOOD PARSING ====================
-    
+
     parseFoodInput(text) {
-        const lines = text.split('\n').filter(line => line.trim().length > 0);
-        const results = [];
-        
-        for (const line of lines) {
-            const parsed = this.parseLine(line.trim());
-            results.push(parsed);
-        }
-        
-        return results;
+        return text.split('\n').filter(l => l.trim()).map(l => this.parseLine(l.trim()));
     }
 
     parseLine(line) {
         const original = line;
-        line = line.toLowerCase().trim();
-        
-        // Remove common prefixes
-        line = line.replace(/^[-•*]\s*/, '');
-        
-        // Try to extract quantity
-        let quantity = 1;
-        let gramAmount = null;
-        let cleanedLine = line;
-        
-        // Pattern: "200gr tavuk" veya "200g tavuk" veya "200 gr tavuk"
-        const gramPattern = /(\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b/i;
-        const gramMatch = line.match(gramPattern);
+        line = line.toLowerCase().trim().replace(/^[-•*]\s*/, '');
+
+        let quantity = 1, gramAmount = null, cleanedLine = line;
+
+        const gramMatch = line.match(/(\d+(?:[.,]\d+)?)\s*(?:gr|gram|g)\b/i);
         if (gramMatch) {
-            gramAmount = parseFloat(gramMatch[1].replace(',', '.'));
-            cleanedLine = line.replace(gramMatch[0], '').trim();
+            gramAmount   = parseFloat(gramMatch[1].replace(',', '.'));
+            cleanedLine  = line.replace(gramMatch[0], '').trim();
         }
-        
-        // Pattern: "2 dilim ekmek", "bir kase çorba"
-        const quantityPattern = /^(\d+(?:[.,]\d+)?|bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on|yarım|çeyrek)\s+/i;
-        const quantityMatch = cleanedLine.match(quantityPattern);
-        if (quantityMatch) {
-            const qVal = quantityMatch[1].replace(',', '.');
-            quantity = QUANTITY_WORDS[qVal] || parseFloat(qVal) || 1;
-            cleanedLine = cleanedLine.substring(quantityMatch[0].length).trim();
+
+        const qMatch = cleanedLine.match(/^(\d+(?:[.,]\d+)?|bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on|yarım|çeyrek)\s+/i);
+        if (qMatch) {
+            const qv = qMatch[1].replace(',', '.');
+            quantity    = QUANTITY_WORDS[qv] || parseFloat(qv) || 1;
+            cleanedLine = cleanedLine.substring(qMatch[0].length).trim();
         }
-        
-        // Check for "buçuk" pattern (e.g., "1 buçuk" = 1.5)
-        if (cleanedLine.match(/^buçuk\s+/)) {
-            quantity += 0.5;
-            cleanedLine = cleanedLine.replace(/^buçuk\s+/, '');
+
+        if (cleanedLine.match(/^buçuk\s+/)) { quantity += 0.5; cleanedLine = cleanedLine.replace(/^buçuk\s+/, ''); }
+
+        for (const u of ['dilim','adet','porsiyon','kase','bardak','fincan','kaşık',
+                          'yemek kaşığı','çay kaşığı','avuç','top','parça','paket',
+                          'salkım','kadeh','tek','tabak','tane','kutu','şişe']) {
+            if (cleanedLine.includes(u)) { cleanedLine = cleanedLine.replace(u, '').trim(); break; }
         }
-        
-        // Remove unit words from the search text for better matching
-        const unitWords = ['dilim', 'adet', 'porsiyon', 'kase', 'bardak', 'fincan', 
-                          'kaşık', 'yemek kaşığı', 'çay kaşığı', 'avuç', 'top', 
-                          'parça', 'paket', 'salkım', 'kadeh', 'tek', 'tabak',
-                          'tane', 'kutu', 'şişe'];
-        
-        let foundUnit = null;
-        for (const unit of unitWords) {
-            if (cleanedLine.includes(unit)) {
-                foundUnit = unit;
-                cleanedLine = cleanedLine.replace(unit, '').trim();
-                break;
-            }
-        }
-        
-        // Find best matching food
+
         const match = this.findBestMatch(cleanedLine);
-        
         if (match) {
-            let calories;
-            if (gramAmount) {
-                // Calculate based on gram amount
-                calories = Math.round((match.kalori / match.miktar) * gramAmount * quantity);
-            } else {
-                calories = Math.round(match.kalori * quantity);
-            }
-            
-            let detail = '';
-            if (gramAmount) {
-                detail = `${quantity > 1 ? quantity + ' × ' : ''}${gramAmount}g`;
-            } else {
-                detail = `${quantity} ${match.birim}`;
-            }
-            
-            return {
-                original: original,
-                food: match.isim,
-                calories: calories,
-                detail: detail,
-                found: true
-            };
+            const calories = gramAmount
+                ? Math.round((match.kalori / match.miktar) * gramAmount * quantity)
+                : Math.round(match.kalori * quantity);
+            const detail = gramAmount
+                ? `${quantity > 1 ? quantity + ' × ' : ''}${gramAmount}g`
+                : `${quantity} ${match.birim}`;
+            return { original, food: match.isim, calories, detail, found: true };
         }
-        
-        return {
-            original: original,
-            food: original,
-            calories: 0,
-            detail: 'Bulunamadı',
-            found: false
-        };
+        return { original, food: original, calories: 0, detail: 'Bulunamadı', found: false };
     }
 
     findBestMatch(searchText) {
-        searchText = searchText.toLowerCase().trim();
+        searchText = searchText.toLowerCase().trim()
+            .replace(/\b(bir|tane|adet|biraz|az|çok|büyük|küçük|orta)\b/g, '').trim();
         if (!searchText) return null;
-        
-        // Remove common words
-        searchText = searchText.replace(/\b(bir|tane|adet|biraz|az|çok|büyük|küçük|orta)\b/g, '').trim();
-        
-        let bestMatch = null;
-        let bestScore = 0;
-        
+
+        let bestMatch = null, bestScore = 0;
         for (const food of FOOD_DATABASE) {
             for (const alias of food.aliases) {
                 const score = this.calculateMatchScore(searchText, alias.toLowerCase());
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMatch = food;
-                }
+                if (score > bestScore) { bestScore = score; bestMatch = food; }
             }
         }
-        
-        // Require minimum score threshold
-        if (bestScore >= 0.4) {
-            return bestMatch;
-        }
-        
-        return null;
+        return bestScore >= 0.4 ? bestMatch : null;
     }
 
     calculateMatchScore(search, target) {
-        // Exact match
         if (search === target) return 1.0;
-        
-        // Contains
         if (target.includes(search)) return 0.85;
         if (search.includes(target)) return 0.75;
-        
-        // Word-level matching
-        const searchWords = search.split(/\s+/);
-        const targetWords = target.split(/\s+/);
-        
-        let matchedWords = 0;
-        for (const sw of searchWords) {
-            for (const tw of targetWords) {
-                if (tw.includes(sw) || sw.includes(tw)) {
-                    matchedWords++;
-                    break;
-                }
-            }
-        }
-        
-        const wordScore = matchedWords / Math.max(searchWords.length, targetWords.length);
-        if (wordScore > 0) return wordScore * 0.7;
-        
-        // Levenshtein for typo tolerance
-        const distance = this.levenshtein(search, target);
-        const maxLen = Math.max(search.length, target.length);
-        const similarity = 1 - (distance / maxLen);
-        
-        return similarity * 0.5;
+
+        const sw = search.split(/\s+/), tw = target.split(/\s+/);
+        let matched = 0;
+        for (const s of sw) for (const t of tw) if (t.includes(s) || s.includes(t)) { matched++; break; }
+        const ws = matched / Math.max(sw.length, tw.length);
+        if (ws > 0) return ws * 0.7;
+
+        const d = this.levenshtein(search, target);
+        return (1 - d / Math.max(search.length, target.length)) * 0.5;
     }
 
     levenshtein(a, b) {
-        const matrix = [];
-        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-        
-        for (let i = 1; i <= b.length; i++) {
-            for (let j = 1; j <= a.length; j++) {
-                if (b[i-1] === a[j-1]) {
-                    matrix[i][j] = matrix[i-1][j-1];
-                } else {
-                    matrix[i][j] = Math.min(
-                        matrix[i-1][j-1] + 1,
-                        matrix[i][j-1] + 1,
-                        matrix[i-1][j] + 1
-                    );
-                }
-            }
-        }
-        return matrix[b.length][a.length];
+        const m = [];
+        for (let i = 0; i <= b.length; i++) m[i] = [i];
+        for (let j = 0; j <= a.length; j++) m[0][j] = j;
+        for (let i = 1; i <= b.length; i++)
+            for (let j = 1; j <= a.length; j++)
+                m[i][j] = b[i-1] === a[j-1]
+                    ? m[i-1][j-1]
+                    : Math.min(m[i-1][j-1]+1, m[i][j-1]+1, m[i-1][j]+1);
+        return m[b.length][a.length];
     }
 
-    // ==================== CALCULATE & DISPLAY ====================
-    
+    // ==================== CALCULATE ====================
+
     handleCalculate() {
         const text = this.foodInput.value.trim();
-        if (!text) {
-            this.showToast('Lütfen yediklerini yaz!', 'error');
-            return;
-        }
-        
-        // Loading animation
+        if (!text) { this.showToast('Lütfen yediklerini yaz!', 'error'); return; }
+
         this.calculateBtn.classList.add('loading');
         this.calculateBtn.querySelector('.btn-icon').textContent = '⏳';
-        
-        // Simulate AI processing delay for UX
+
         setTimeout(() => {
             this.currentResults = this.parseFoodInput(text);
             this.displayResults();
-            
             this.calculateBtn.classList.remove('loading');
             this.calculateBtn.querySelector('.btn-icon').textContent = '⚡';
         }, 600);
@@ -579,197 +352,122 @@ class CalorieTracker {
     displayResults() {
         this.resultsList.innerHTML = '';
         let total = 0;
-        
-        for (const result of this.currentResults) {
+
+        for (const r of this.currentResults) {
             const item = document.createElement('div');
-            item.className = `result-item${result.found ? '' : ' not-found'}`;
-            
-            if (result.found) {
-                item.innerHTML = `
-                    <div class="result-food">
-                        <span class="result-food-name">${this.capitalize(result.food)}</span>
-                        <span class="result-food-detail">${result.detail}</span>
-                    </div>
-                    <span class="result-calories">${result.calories} kcal</span>
-                `;
-                total += result.calories;
-            } else {
-                item.innerHTML = `
-                    <div class="result-food">
-                        <span class="result-food-name">❓ ${result.original}</span>
-                        <span class="result-food-detail">Veritabanında bulunamadı</span>
-                    </div>
-                    <span class="result-calories">— kcal</span>
-                `;
-            }
-            
+            item.className = `result-item${r.found ? '' : ' not-found'}`;
+            item.innerHTML = r.found
+                ? `<div class="result-food">
+                       <span class="result-food-name">${this.capitalize(r.food)}</span>
+                       <span class="result-food-detail">${r.detail}</span>
+                   </div><span class="result-calories">${r.calories} kcal</span>`
+                : `<div class="result-food">
+                       <span class="result-food-name">❓ ${r.original}</span>
+                       <span class="result-food-detail">Veritabanında bulunamadı</span>
+                   </div><span class="result-calories">— kcal</span>`;
+            if (r.found) total += r.calories;
             this.resultsList.appendChild(item);
         }
-        
+
         this.totalCalories.textContent = total + ' kcal';
         this.resultsSection.style.display = 'block';
-        
-        // Scroll to results
         this.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // ==================== LOG HELPERS ====================
-    getDateKey(date) {
-        const d = new Date(date);
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
-
-    loadTodayLog() {
-        const today = this.getTodayKey();
-        this.todayLog = this.loadLogForKey(today);
-    }
-
-    getTodayKey() {
-        return this.getDateKey(new Date());
-    }
-
-    // ==================== ARCHIVE ====================
-    loadArchiveForSelectedDate() {
-        const key = this.selectedArchiveDate;
-        if (!key) {
-            this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
-            this.deleteDayBtn.style.display = 'none';
-            this.archiveSummary.style.display = 'none';
-            return;
-        }
-        const log = this.loadLogForKey(key);
-        this.renderArchiveList(log);
-        this.deleteDayBtn.style.display = log.length ? 'block' : 'none';
-    }
-
-    renderArchiveList(log) {
-        this.archiveList.innerHTML = '';
-        if (log.length === 0) {
-            this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
-            this.archiveSummary.style.display = 'none';
-            return;
-        }
-        
-        const target = this.settings.targetCalories;
-        const consumed = log.reduce((sum, entry) => sum + entry.calories, 0);
-        const remaining = target - consumed;
-
-        this.archiveTarget.textContent = target;
-        this.archiveConsumed.textContent = consumed;
-        
-        if (remaining < 0) {
-            this.archiveRemaining.textContent = Math.abs(remaining);
-            this.archiveRemainingCard.querySelector('.summary-label').textContent = 'Aşıldı';
-            this.archiveRemaining.style.color = '#ef4444';
-        } else {
-            this.archiveRemaining.textContent = remaining;
-            this.archiveRemainingCard.querySelector('.summary-label').textContent = 'Kalan';
-            this.archiveRemaining.style.color = '';
-        }
-        
-        this.archiveSummary.style.display = 'grid';
-
-        for (const entry of log) {
-            const el = document.createElement('div');
-            el.className = 'log-entry';
-            el.innerHTML = `
-                <div class="log-entry-info">
-                    <span class="log-entry-name">${this.capitalize(entry.food)}</span>
-                    <span class="log-entry-time">${entry.time} • ${entry.detail}</span>
-                </div>
-                <div class="log-entry-right">
-                    <span class="log-entry-cal">${entry.calories} kcal</span>
-                </div>
-            `;
-            this.archiveList.appendChild(el);
-        }
-    }
-
-    deleteArchiveDay() {
-        const key = this.selectedArchiveDate;
-        if (!key) return;
-        if (confirm('Seçilen günün tüm kayıtlarını silmek istediğinize emin misiniz?')) {
-            this.deleteLogForKey(key);
-            this.renderCalendar();
-            this.loadArchiveForSelectedDate();
-            this.showToast('Günlük silindi!', 'success');
-        }
-    }
-
-    // ==================== DAILY LOG ====================
-    saveTodayLog() {
-        const today = this.getTodayKey();
-        this.saveLogForKey(today, this.todayLog);
-    }
+    // ==================== LOG ====================
 
     addToLog() {
-        const foundResults = this.currentResults.filter(r => r.found);
-        if (foundResults.length === 0) {
-            this.showToast('Eklenecek yemek bulunamadı!', 'error');
-            return;
-        }
-        
-        const now = new Date();
+        const found = this.currentResults.filter(r => r.found);
+        if (!found.length) { this.showToast('Eklenecek yemek bulunamadı!', 'error'); return; }
+
+        const now    = new Date();
         const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-        
-        for (const result of foundResults) {
-            this.todayLog.push({
+
+        for (const r of found) {
+            this.activeLog.push({
                 id: Date.now() + Math.random(),
-                food: result.food,
-                calories: result.calories,
-                detail: result.detail,
-                time: timeStr
+                food: r.food, calories: r.calories,
+                detail: r.detail, time: timeStr
             });
         }
-        
-        this.saveTodayLog();
+
+        this.writeLog(this.activeDate, this.activeLog);
         this.updateUI();
-        
-        // Clear input and results
         this.foodInput.value = '';
         this.resultsSection.style.display = 'none';
         this.currentResults = [];
-        
-        this.showToast(`${foundResults.length} yemek günlüğe eklendi!`, 'success');
+        this.showToast(`${found.length} yemek eklendi!`, 'success');
     }
 
     removeFromLog(id) {
-        this.todayLog = this.todayLog.filter(entry => entry.id !== id);
-        this.saveTodayLog();
+        this.activeLog = this.activeLog.filter(e => e.id !== id);
+        this.writeLog(this.activeDate, this.activeLog);
+        this.renderCalendar(); // dot may disappear
         this.updateUI();
     }
 
     clearLog() {
-        if (confirm('Bugünün günlüğünü temizlemek istediğine emin misin?')) {
-            this.todayLog = [];
-            this.saveTodayLog();
+        const label = this.activeDate === this.todayKey ? 'bugünün günlüğünü' : `${this.formatDate(this.activeDate)} günlüğünü`;
+        if (confirm(`${this.capitalize(label)} temizlemek istediğine emin misin?`)) {
+            this.activeLog = [];
+            this.deleteLog(this.activeDate);
+            this.renderCalendar();
             this.updateUI();
             this.showToast('Günlük temizlendi!', 'success');
         }
     }
 
+    // ==================== CALENDAR ====================
+
+    renderCalendar() {
+        const logKeys = this.getAllLogKeys();
+
+        this.calendarMonthYear.textContent = `${TR_MONTHS[this.currentMonth]} ${this.currentYear}`;
+        this.calendarGrid.innerHTML = '';
+
+        const firstDay    = new Date(this.currentYear, this.currentMonth, 1).getDay();
+        const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+        const startDay    = firstDay === 0 ? 6 : firstDay - 1;
+
+        for (let i = 0; i < startDay; i++) {
+            const div = document.createElement('div');
+            div.className = 'calendar-day empty';
+            this.calendarGrid.appendChild(div);
+        }
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const dateStr = `${this.currentYear}-${String(this.currentMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            const div = document.createElement('div');
+            div.className = 'calendar-day';
+            div.textContent = i;
+
+            if (dateStr === this.activeDate)  div.classList.add('selected');
+            if (dateStr === this.todayKey)    div.classList.add('today');
+            if (logKeys.includes(dateStr))    div.classList.add('has-log');
+
+            div.addEventListener('click', () => this.setActiveDate(dateStr));
+            this.calendarGrid.appendChild(div);
+        }
+    }
+
     // ==================== UI UPDATE ====================
-    
+
     updateUI() {
-        const target = this.settings.targetCalories;
-        const consumed = this.todayLog.reduce((sum, entry) => sum + entry.calories, 0);
+        const target   = this.settings.targetCalories;
+        const consumed = this.activeLog.reduce((s, e) => s + e.calories, 0);
         const remaining = Math.max(0, target - consumed);
-        const percent = Math.min(100, Math.round((consumed / target) * 100));
-        
-        // Animate numbers
-        this.animateNumber(this.targetEl, target);
-        this.animateNumber(this.consumedEl, consumed);
+        const percent   = Math.min(100, Math.round((consumed / target) * 100));
+
+        this.animateNumber(this.targetEl,    target);
+        this.animateNumber(this.consumedEl,  consumed);
         this.animateNumber(this.remainingEl, remaining);
-        
-        // Progress ring
-        const circumference = 2 * Math.PI * 85; // r=85
-        const offset = circumference - (percent / 100) * circumference;
-        this.progressRing.style.strokeDasharray = circumference;
-        this.progressRing.style.strokeDashoffset = offset;
-        
+
+        const circumference = 2 * Math.PI * 85;
+        this.progressRing.style.strokeDasharray  = circumference;
+        this.progressRing.style.strokeDashoffset = circumference - (percent / 100) * circumference;
         this.progressPercent.textContent = percent + '%';
-        
-        // Status and colors
+
+        const stops = document.querySelectorAll('#progressGradient stop');
         if (consumed === 0) {
             this.progressLabel.textContent = 'başla!';
             this.statusBadge.className = 'status-badge';
@@ -786,53 +484,50 @@ class CalorieTracker {
             this.progressLabel.textContent = 'aşıldı!';
             this.statusBadge.className = 'status-badge danger';
             this.statusBadge.innerHTML = `<span class="status-icon">🚫</span><span class="status-text">Hedefi ${consumed - target} kcal aştın!</span>`;
-            
-            // Change ring color to red
-            const stops = document.querySelectorAll('#progressGradient stop');
-            if (stops.length >= 2) {
-                stops[0].setAttribute('stop-color', '#ef4444');
-                stops[1].setAttribute('stop-color', '#dc2626');
-            }
+            if (stops.length >= 2) { stops[0].setAttribute('stop-color','#ef4444'); stops[1].setAttribute('stop-color','#dc2626'); }
         }
-        
-        // Reset ring color if within target
-        if (consumed <= target) {
-            const stops = document.querySelectorAll('#progressGradient stop');
-            if (stops.length >= 2) {
-                stops[0].setAttribute('stop-color', '#8b5cf6');
-                stops[1].setAttribute('stop-color', '#10b981');
-            }
+        if (consumed <= target && stops.length >= 2) {
+            stops[0].setAttribute('stop-color','#8b5cf6'); stops[1].setAttribute('stop-color','#10b981');
         }
-        
-        // Update remaining card color
+
         if (consumed > target) {
             this.remainingEl.parentElement.querySelector('.stat-value').style.color = '#ef4444';
             this.remainingEl.textContent = '0';
         } else {
             this.remainingEl.parentElement.querySelector('.stat-value').style.color = '';
         }
-        
-        // Update log display
+
+        // Date header
+        const isToday = this.activeDate === this.todayKey;
+        this.logDateLabel.textContent  = isToday ? 'Bugünün Günlüğü' : this.formatDate(this.activeDate) + ' Günlüğü';
+        this.todayBackBtn.style.display = isToday ? 'none' : 'flex';
+
+        // Input section subtitle update
+        if (this.inputDateLabel) {
+            this.inputDateLabel.textContent = isToday
+                ? 'Yediklerini aşağıya yaz, yapay zeka kalorilerini hesaplasın.'
+                : `${this.formatDate(this.activeDate)} için ekle`;
+        }
+
         this.renderLog();
     }
 
     renderLog() {
         this.logList.innerHTML = '';
-        
-        if (this.todayLog.length === 0) {
+
+        if (this.activeLog.length === 0) {
             this.logList.innerHTML = `
-                <div class="log-empty" id="logEmpty">
+                <div class="log-empty">
                     <span class="empty-icon">🍽️</span>
-                    <p>Henüz bir şey eklenmedi</p>
-                </div>
-            `;
+                    <p>Bu tarihte kayıt yok</p>
+                </div>`;
             this.clearBtn.style.display = 'none';
             return;
         }
-        
+
         this.clearBtn.style.display = 'block';
-        
-        for (const entry of this.todayLog) {
+
+        for (const entry of this.activeLog) {
             const el = document.createElement('div');
             el.className = 'log-entry';
             el.innerHTML = `
@@ -842,56 +537,62 @@ class CalorieTracker {
                 </div>
                 <div class="log-entry-right">
                     <span class="log-entry-cal">${entry.calories} kcal</span>
-                    <button class="log-entry-delete" data-id="${entry.id}" title="Sil">×</button>
-                </div>
-            `;
-            
-            el.querySelector('.log-entry-delete').addEventListener('click', (e) => {
-                this.removeFromLog(entry.id);
-            });
-            
+                    <button class="log-entry-delete" title="Sil">×</button>
+                </div>`;
+            el.querySelector('.log-entry-delete').addEventListener('click', () => this.removeFromLog(entry.id));
             this.logList.appendChild(el);
         }
     }
 
-    // ==================== UTILITIES ====================
-    
-    animateNumber(element, target) {
-        const current = parseInt(element.textContent) || 0;
+    // ==================== HELPERS ====================
+
+    getDateKey(date) {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    formatDate(dateStr) {
+        // "2025-04-08" → "8 Nisan"
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return `${d} ${TR_MONTHS[m-1]}`;
+    }
+
+    addSVGGradient() {
+        const svg  = document.querySelector('.progress-ring');
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const g    = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        g.setAttribute('id', 'progressGradient');
+        g.setAttribute('x1','0%'); g.setAttribute('y1','0%');
+        g.setAttribute('x2','100%'); g.setAttribute('y2','100%');
+        const s1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#8b5cf6');
+        const s2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#10b981');
+        g.appendChild(s1); g.appendChild(s2); defs.appendChild(g);
+        svg.insertBefore(defs, svg.firstChild);
+    }
+
+    animateNumber(el, target) {
+        const current = parseInt(el.textContent) || 0;
         const diff = target - current;
         const steps = 20;
-        const increment = diff / steps;
         let step = 0;
-        
         const timer = setInterval(() => {
             step++;
-            if (step >= steps) {
-                element.textContent = target;
-                clearInterval(timer);
-            } else {
-                element.textContent = Math.round(current + increment * step);
-            }
+            if (step >= steps) { el.textContent = target; clearInterval(timer); }
+            else el.textContent = Math.round(current + (diff / steps) * step);
         }, 25);
     }
 
-    capitalize(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
+    capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
 
     showToast(message, type = 'success') {
-        // Remove existing toast
-        const existing = document.querySelector('.toast');
-        if (existing) existing.remove();
-        
+        document.querySelector('.toast')?.remove();
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.textContent = message;
         document.body.appendChild(toast);
-        
-        requestAnimationFrame(() => {
-            toast.classList.add('show');
-        });
-        
+        requestAnimationFrame(() => toast.classList.add('show'));
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 400);
@@ -899,71 +600,51 @@ class CalorieTracker {
     }
 }
 
-// Initialize app
+// ==================== INIT ====================
+
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new CalorieTracker();
-    
-    // PWA Install Banner Logic
-    const installBanner = document.getElementById('installBanner');
-    const installBtn = document.getElementById('installBtn');
+
+    const installBanner  = document.getElementById('installBanner');
+    const installBtn     = document.getElementById('installBtn');
     const installDismiss = document.getElementById('installDismiss');
     let deferredPrompt = null;
-    
-    // Check if already installed as PWA
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-        || window.navigator.standalone === true;
-    
-    // Check if dismissed before
-    const dismissed = localStorage.getItem('kaloriTakip_installDismissed');
-    
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
+    const dismissed    = localStorage.getItem('kaloriTakip_installDismissed');
+
     if (!isStandalone && !dismissed) {
-        // iOS Safari detection
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent);
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-        
+
         if (isIOS && isSafari) {
-            // Show iOS-specific install instructions
             setTimeout(() => {
                 installBanner.style.display = 'flex';
-                const content = installBanner.querySelector('.install-content');
-                content.innerHTML = `
+                installBanner.querySelector('.install-content').innerHTML = `
                     <span>📲</span>
-                    <div>
-                        <strong>Ana Ekrana Ekle</strong>
-                        <small>Paylaş 📤 → "Ana Ekrana Ekle"</small>
-                    </div>
-                `;
+                    <div><strong>Ana Ekrana Ekle</strong><small>Paylaş 📤 → "Ana Ekrana Ekle"</small></div>`;
                 installBtn.style.display = 'none';
             }, 3000);
         }
-        
-        // Android / Chrome install prompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            setTimeout(() => {
-                installBanner.style.display = 'flex';
-            }, 3000);
+
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault(); deferredPrompt = e;
+            setTimeout(() => installBanner.style.display = 'flex', 3000);
         });
-        
-        if (installBtn) {
-            installBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    if (outcome === 'accepted') {
-                        installBanner.style.display = 'none';
-                    }
-                    deferredPrompt = null;
-                }
-            });
-        }
-        
-        if (installDismiss) {
-            installDismiss.addEventListener('click', () => {
-                installBanner.style.display = 'none';
-                localStorage.setItem('kaloriTakip_installDismissed', 'true');
-            });
-        }
+
+        installBtn?.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBanner.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        installDismiss?.addEventListener('click', () => {
+            installBanner.style.display = 'none';
+            localStorage.setItem('kaloriTakip_installDismissed', 'true');
+        });
     }
 });

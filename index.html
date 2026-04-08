@@ -86,7 +86,7 @@
         <!-- Food Input -->
         <div class="input-section">
             <h2 class="section-title">Ne yedin?</h2>
-            <p class="section-desc">Yediklerini aşağıya yaz, yapay zeka kalorilerini hesaplasın.</p>
+            <p class="section-desc" id="inputDateLabel">Yediklerini aşağıya yaz, yapay zeka kalorilerini hesaplasın.</p>
             <div class="input-wrapper">
                 <textarea 
                     id="foodInput" 
@@ -114,22 +114,27 @@
             </button>
         </div>
 
-        <!-- Today's Log -->
+        <!-- Log Section (date-aware) -->
         <div class="log-section">
-            <h2 class="section-title">Bugünün Günlüğü</h2>
+            <div class="log-date-header">
+                <h2 class="section-title" id="logDateLabel">Bugünün Günlüğü</h2>
+                <button class="today-back-btn" id="todayBackBtn" style="display:none;">
+                    ← Bugüne Dön
+                </button>
+            </div>
             <div class="log-list" id="logList">
-                <div class="log-empty" id="logEmpty">
+                <div class="log-empty">
                     <span class="empty-icon">🍽️</span>
-                    <p>Henüz bir şey eklenmedi</p>
+                    <p>Bu tarihte kayıt yok</p>
                 </div>
             </div>
             <button class="clear-btn" id="clearBtn" style="display: none;">
                 <span>🗑️</span> Günlüğü Temizle
             </button>
         </div>
-        <!-- Archive Section -->
+        <!-- Calendar / Archive Section -->
         <div class="archive-section">
-            <h2 class="section-title">Arşiv</h2>
+            <h2 class="section-title">Takvim</h2>
             <div class="calendar" id="calendar">
                 <div class="calendar-header">
                     <button class="calendar-nav-btn" id="prevMonthBtn">&lt;</button>
@@ -143,26 +148,6 @@
                     <!-- Days dynamically inserted here -->
                 </div>
             </div>
-            
-            <div class="archive-summary" id="archiveSummary" style="display: none;">
-                <div class="summary-card">
-                    <span class="summary-label">Hedef</span>
-                    <span class="summary-value" id="archiveTarget">2400</span>
-                </div>
-                <div class="summary-card">
-                    <span class="summary-label">Tüketilen</span>
-                    <span class="summary-value" id="archiveConsumed">0</span>
-                </div>
-                <div class="summary-card" id="archiveRemainingCard">
-                    <span class="summary-label">Kalan</span>
-                    <span class="summary-value" id="archiveRemaining">2400</span>
-                </div>
-            </div>
-
-            <div class="archive-list" id="archiveList">
-                <p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>
-            </div>
-            <button class="delete-day-btn" id="deleteDayBtn" style="display:none;">🗑️ Günlüğü Sil</button>
         </div>
 
         <!-- Settings Modal -->

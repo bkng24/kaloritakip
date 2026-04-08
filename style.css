@@ -634,6 +634,16 @@ body::before {
     cursor: default;
 }
 
+.calendar-day.today {
+    font-weight: 700;
+    color: var(--accent-secondary);
+}
+
+.calendar-day.today:not(.selected) {
+    border-color: rgba(139, 92, 246, 0.35);
+    background: rgba(139, 92, 246, 0.08);
+}
+
 .calendar-day.selected {
     background: var(--accent-primary);
     color: white;
@@ -726,6 +736,41 @@ body::before {
 
 .log-section {
     margin-bottom: 28px;
+}
+
+.log-date-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 12px;
+}
+
+.log-date-header .section-title {
+    margin-bottom: 0;
+}
+
+.today-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    border: 1px solid var(--border-glow);
+    background: var(--accent-glow);
+    color: var(--accent-secondary);
+    font-family: var(--font-family);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.today-back-btn:hover {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
 }
 
 .log-list {
