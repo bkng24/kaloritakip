@@ -19,38 +19,42 @@ class CalorieTracker {
     
     initElements() {
         // Stats
-        this.targetEl = document.getElementById('targetCalories');
         this.consumedEl = document.getElementById('consumedCalories');
         this.remainingEl = document.getElementById('remainingCalories');
-        
+
         // Progress
         this.progressRing = document.getElementById('progressRing');
         this.progressPercent = document.getElementById('progressPercent');
         this.progressLabel = document.getElementById('progressLabel');
         this.statusBadge = document.getElementById('statusBadge');
-        
+
         // Input
         this.foodInput = document.getElementById('foodInput');
         this.calculateBtn = document.getElementById('calculateBtn');
-        
+
         // Results
         this.resultsSection = document.getElementById('resultsSection');
         this.resultsList = document.getElementById('resultsList');
         this.totalCalories = document.getElementById('totalCalories');
         this.addBtn = document.getElementById('addBtn');
-        
-        // Log
+
+        // Log (today)
         this.logList = document.getElementById('logList');
         this.logEmpty = document.getElementById('logEmpty');
         this.clearBtn = document.getElementById('clearBtn');
-        
+
+        // Archive UI
+        this.archiveDate = document.getElementById('archiveDate');
+        this.archiveList = document.getElementById('archiveList');
+        this.deleteDayBtn = document.getElementById('deleteDayBtn');
+
         // Settings
         this.settingsBtn = document.getElementById('settingsBtn');
         this.settingsModal = document.getElementById('settingsModal');
         this.closeModal = document.getElementById('closeModal');
         this.saveSettingsBtn = document.getElementById('saveSettings');
         this.calculatedTargetEl = document.getElementById('calculatedTarget');
-        
+
         // Settings inputs
         this.inputAge = document.getElementById('inputAge');
         this.inputGender = document.getElementById('inputGender');
@@ -59,6 +63,7 @@ class CalorieTracker {
         this.inputActivity = document.getElementById('inputActivity');
         this.inputGoal = document.getElementById('inputGoal');
     }
+
 
     initEvents() {
         this.calculateBtn.addEventListener('click', () => this.handleCalculate());
@@ -83,6 +88,10 @@ class CalorieTracker {
                 this.handleCalculate();
             }
         });
+
+        // Archive interactions
+        this.archiveDate.addEventListener('change', () => this.loadArchiveForSelectedDate());
+        this.deleteDayBtn.addEventListener('click', () => this.deleteArchiveDay());
     }
 
     addSVGGradient() {
@@ -462,21 +471,81 @@ class CalorieTracker {
 
     // ==================== DAILY LOG ====================
     
-    loadTodayLog() {
-        const today = this.getTodayKey();
-        const saved = localStorage.getItem(`kaloriTakip_log_${today}`);
-        if (saved) return JSON.parse(saved);
-        return [];
+    // ==================== LOG HELPERS ====================
+    getDateKey(date) {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
-    saveTodayLog() {
+    loadTodayLog() {
         const today = this.getTodayKey();
-        localStorage.setItem(`kaloriTakip_log_${today}`, JSON.stringify(this.todayLog));
+        return this.loadLogForKey(today);
+    }
+
+    loadLogForKey(key) {
+        const saved = localStorage.getItem(`kaloriTakip_log_${key}`);
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveLogForKey(key, data) {
+        localStorage.setItem(`kaloriTakip_log_${key}`, JSON.stringify(data));
     }
 
     getTodayKey() {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        return this.getDateKey(new Date());
+    }
+
+    // ==================== ARCHIVE ====================
+    loadArchiveForSelectedDate() {
+        const dateVal = this.archiveDate.value;
+        if (!dateVal) {
+            this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
+            this.deleteDayBtn.style.display = 'none';
+            return;
+        }
+        const key = this.getDateKey(dateVal);
+        const log = this.loadLogForKey(key);
+        this.renderArchiveList(log);
+        this.deleteDayBtn.style.display = log.length ? 'block' : 'none';
+    }
+
+    renderArchiveList(log) {
+        this.archiveList.innerHTML = '';
+        if (log.length === 0) {
+            this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
+            return;
+        }
+        for (const entry of log) {
+            const el = document.createElement('div');
+            el.className = 'log-entry';
+            el.innerHTML = `
+                <div class="log-entry-info">
+                    <span class="log-entry-name">${this.capitalize(entry.food)}</span>
+                    <span class="log-entry-time">${entry.time} • ${entry.detail}</span>
+                </div>
+                <div class="log-entry-right">
+                    <span class="log-entry-cal">${entry.calories} kcal</span>
+                </div>
+            `;
+            this.archiveList.appendChild(el);
+        }
+    }
+
+    deleteArchiveDay() {
+        const dateVal = this.archiveDate.value;
+        if (!dateVal) return;
+        if (confirm('Seçilen günün tüm kayıtlarını silmek istediğinize emin misiniz?')) {
+            const key = this.getDateKey(dateVal);
+            localStorage.removeItem(`kaloriTakip_log_${key}`);
+            this.loadArchiveForSelectedDate();
+            this.showToast('Günlük silindi!', 'success');
+        }
+    }
+
+    // ==================== DAILY LOG ====================
+    saveTodayLog() {
+        const today = this.getTodayKey();
+        this.saveLogForKey(today, this.todayLog);
     }
 
     addToLog() {
