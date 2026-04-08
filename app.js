@@ -7,6 +7,7 @@ class CalorieTracker {
         this.settings = this.loadSettings();
         this.todayLog = this.loadTodayLog();
         this.currentResults = [];
+        this.deferredPrompt = null;
         
         const now = new Date();
         this.currentMonth = now.getMonth();
@@ -26,6 +27,7 @@ class CalorieTracker {
     
     initElements() {
         // Stats
+        this.targetEl = document.getElementById('targetCalories');
         this.consumedEl = document.getElementById('consumedCalories');
         this.remainingEl = document.getElementById('remainingCalories');
 
@@ -73,6 +75,11 @@ class CalorieTracker {
         this.inputWeight = document.getElementById('inputWeight');
         this.inputActivity = document.getElementById('inputActivity');
         this.inputGoal = document.getElementById('inputGoal');
+        
+        // PWA Install
+        this.installBanner = document.getElementById('installBanner');
+        this.installBtn = document.getElementById('installBtn');
+        this.installDismiss = document.getElementById('installDismiss');
     }
 
 
@@ -121,6 +128,8 @@ class CalorieTracker {
 
         this.deleteDayBtn.addEventListener('click', () => this.deleteArchiveDay());
     }
+
+
 
     renderCalendar() {
         const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
