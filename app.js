@@ -547,6 +547,8 @@ class CalorieTracker {
     // ==================== HELPERS ====================
 
     getDateKey(date) {
+        // If already a "YYYY-MM-DD" string, return as-is (avoids UTC parse offset bug)
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
         const d = new Date(date);
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
