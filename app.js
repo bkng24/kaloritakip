@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD_EZUWn78Y-pkjTX8UMCJsgpeaw4DxFgk",
@@ -53,62 +53,28 @@ class CalorieTracker {
     }
 
     async initFirebase() {
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // User is logged in
-                this.userId = user.uid;
-                this.loginOverlay.classList.remove('active');
-                this.appContainer.style.display = 'block';
-                
-                try {
-                    await this.loadSettings();
-                    await this.loadTodayLog();
-                    this.calculateTarget();
-                    this.updateUI();
-                    await this.renderCalendar();
-                    await this.loadArchiveForSelectedDate();
-                } catch (error) {
-                    console.error("Firebase Veri Hatası:", error);
-                    this.showToast("Cloud verileri alınamadı.", "error");
-                }
-            } else {
-                // User is signed out
-                this.userId = null;
-                this.appContainer.style.display = 'none';
-                this.loginOverlay.classList.add('active');
-                this.closeSettings();
-            }
-        });
-    }
-
-    async loginWithGoogle() {
         try {
-            const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
+            await signInAnonymously(auth);
+            
+            // Sabit gizli kullanıcı klasörü
+            this.userId = 'berk_kalori_gizli_oda_1907';
+            
+            await this.loadSettings();
+            await this.loadTodayLog();
+            
+            this.calculateTarget();
+            this.updateUI();
+            await this.renderCalendar();
+            await this.loadArchiveForSelectedDate();
         } catch (error) {
-            console.error("Giriş Hatası:", error);
-            this.showToast("Giriş yapılamadı.", "error");
-        }
-    }
-
-    async logout() {
-        try {
-            await signOut(auth);
-            this.showToast("Çıkış yapıldı.", "success");
-        } catch (error) {
-            console.error("Çıkış Hatası:", error);
+            console.error("Firebase Auth Error:", error);
+            this.showToast("Bulut bağlantısı kurulamadı.", "error");
         }
     }
 
     // ==================== INITIALIZATION ====================
     
     initElements() {
-        // Auth UI
-        this.loginOverlay = document.getElementById('loginOverlay');
-        this.appContainer = document.getElementById('appContainer');
-        this.googleLoginBtn = document.getElementById('googleLoginBtn');
-        this.logoutBtn = document.getElementById('logoutBtn');
-        
         // Stats
         this.targetEl = document.getElementById('targetCalories');
         this.consumedEl = document.getElementById('consumedCalories');
@@ -173,13 +139,6 @@ class CalorieTracker {
 
 
     initEvents() {
-        if (this.googleLoginBtn) {
-            this.googleLoginBtn.addEventListener('click', () => this.loginWithGoogle());
-        }
-        if (this.logoutBtn) {
-            this.logoutBtn.addEventListener('click', () => this.logout());
-        }
-
         this.calculateBtn.addEventListener('click', () => this.handleCalculate());
         this.addBtn.addEventListener('click', () => this.addToLog());
         this.clearBtn.addEventListener('click', () => this.clearLog());
