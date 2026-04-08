@@ -662,17 +662,21 @@ body::before {
     50%       { box-shadow: 0 0 0 3px var(--accent-secondary), 0 0 24px rgba(139,92,246,0.75), 0 4px 16px rgba(139,92,246,0.5); }
 }
 
-.calendar-day.has-log::after {
+.calendar-day.has-log-ok::after,
+.calendar-day.has-log-over::after {
     content: '';
     position: absolute;
     bottom: 4px;
-    width: 4px;
-    height: 4px;
-    background-color: var(--success);
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
 }
 
-.calendar-day.selected.has-log::after {
+.calendar-day.has-log-ok::after  { background-color: var(--success); }
+.calendar-day.has-log-over::after { background-color: var(--danger); }
+
+.calendar-day.selected.has-log-ok::after,
+.calendar-day.selected.has-log-over::after {
     background-color: white;
 }
 

@@ -443,7 +443,12 @@ class CalorieTracker {
 
             if (dateStr === this.activeDate)  div.classList.add('selected');
             if (dateStr === this.todayKey)    div.classList.add('today');
-            if (logKeys.includes(dateStr))    div.classList.add('has-log');
+
+            if (logKeys.includes(dateStr)) {
+                const dayLog   = this.readLog(dateStr);
+                const dayTotal = dayLog.reduce((s, e) => s + e.calories, 0);
+                div.classList.add(dayTotal > this.settings.targetCalories ? 'has-log-over' : 'has-log-ok');
+            }
 
             div.addEventListener('click', () => this.setActiveDate(dateStr));
             this.calendarGrid.appendChild(div);
