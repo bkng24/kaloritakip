@@ -57,6 +57,12 @@ class CalorieTracker {
         this.prevMonthBtn = document.getElementById('prevMonthBtn');
         this.nextMonthBtn = document.getElementById('nextMonthBtn');
         this.calendarGrid = document.getElementById('calendarGrid');
+        
+        this.archiveSummary = document.getElementById('archiveSummary');
+        this.archiveTarget = document.getElementById('archiveTarget');
+        this.archiveConsumed = document.getElementById('archiveConsumed');
+        this.archiveRemaining = document.getElementById('archiveRemaining');
+        this.archiveRemainingCard = document.getElementById('archiveRemainingCard');
 
         this.archiveList = document.getElementById('archiveList');
         this.deleteDayBtn = document.getElementById('deleteDayBtn');
@@ -582,6 +588,7 @@ class CalorieTracker {
         if (!key) {
             this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
             this.deleteDayBtn.style.display = 'none';
+            this.archiveSummary.style.display = 'none';
             return;
         }
         const log = this.loadLogForKey(key);
@@ -593,8 +600,29 @@ class CalorieTracker {
         this.archiveList.innerHTML = '';
         if (log.length === 0) {
             this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
+            this.archiveSummary.style.display = 'none';
             return;
         }
+        
+        const target = this.settings.targetCalories;
+        const consumed = log.reduce((sum, entry) => sum + entry.calories, 0);
+        const remaining = target - consumed;
+
+        this.archiveTarget.textContent = target;
+        this.archiveConsumed.textContent = consumed;
+        
+        if (remaining < 0) {
+            this.archiveRemaining.textContent = Math.abs(remaining);
+            this.archiveRemainingCard.querySelector('.summary-label').textContent = 'Aşıldı';
+            this.archiveRemaining.style.color = '#ef4444';
+        } else {
+            this.archiveRemaining.textContent = remaining;
+            this.archiveRemainingCard.querySelector('.summary-label').textContent = 'Kalan';
+            this.archiveRemaining.style.color = '';
+        }
+        
+        this.archiveSummary.style.display = 'grid';
+
         for (const entry of log) {
             const el = document.createElement('div');
             el.className = 'log-entry';
