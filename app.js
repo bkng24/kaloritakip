@@ -1,31 +1,14 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyD_EZUWn78Y-pkjTX8UMCJsgpeaw4DxFgk",
-  authDomain: "kalori-takip-4ebcb.firebaseapp.com",
-  projectId: "kalori-takip-4ebcb",
-  storageBucket: "kalori-takip-4ebcb.firebasestorage.app",
-  messagingSenderId: "797395909566",
-  appId: "1:797395909566:web:9ef50560e9d30186a3d7ef",
-  measurementId: "G-MX13H130NF"
-};
-
-const appInstance = initializeApp(firebaseConfig);
-const db = getFirestore(appInstance);
-const auth = getAuth(appInstance);
-
 // ============================================================
-// KaloriTakip - Ana Uygulama Mantığı
+// KaloriTakip - Ana Uygulama Mantığı (localStorage versiyonu)
 // ============================================================
+
+const LS_PREFIX = 'kaloriTakip_';
 
 class CalorieTracker {
     constructor() {
         this.settings = this.getDefaultSettings();
         this.todayLog = [];
         this.currentResults = [];
-        this.userId = null;
         this.deferredPrompt = null;
         
         const now = new Date();
@@ -37,7 +20,7 @@ class CalorieTracker {
         this.initEvents();
         this.addSVGGradient();
         
-        this.initFirebase();
+        this.init();
     }
 
     getDefaultSettings() {
@@ -52,24 +35,14 @@ class CalorieTracker {
         };
     }
 
-    async initFirebase() {
-        try {
-            await signInAnonymously(auth);
-            
-            // Sabit gizli kullanıcı klasörü
-            this.userId = 'berk_kalori_gizli_oda_1907';
-            
-            await this.loadSettings();
-            await this.loadTodayLog();
-            
-            this.calculateTarget();
-            this.updateUI();
-            await this.renderCalendar();
-            await this.loadArchiveForSelectedDate();
-        } catch (error) {
-            console.error("Firebase Auth Error:", error);
-            this.showToast("Bulut bağlantısı kurulamadı.", "error");
-        }
+    init() {
+        this.loadSettings();
+        this.loadTodayLog();
+        
+        this.calculateTarget();
+        this.updateUI();
+        this.renderCalendar();
+        this.loadArchiveForSelectedDate();
     }
 
     // ==================== INITIALIZATION ====================
@@ -163,38 +136,68 @@ class CalorieTracker {
         });
 
         // Archive interactions
-        this.prevMonthBtn.addEventListener('click', async () => {
+        this.prevMonthBtn.addEventListener('click', () => {
             this.currentMonth--;
             if (this.currentMonth < 0) {
                 this.currentMonth = 11;
                 this.currentYear--;
             }
-            await this.renderCalendar();
+            this.renderCalendar();
         });
         
-        this.nextMonthBtn.addEventListener('click', async () => {
+        this.nextMonthBtn.addEventListener('click', () => {
             this.currentMonth++;
             if (this.currentMonth > 11) {
                 this.currentMonth = 0;
                 this.currentYear++;
             }
-            await this.renderCalendar();
+            this.renderCalendar();
         });
 
         this.deleteDayBtn.addEventListener('click', () => this.deleteArchiveDay());
     }
 
+    // ==================== LOCALSTORAGE HELPERS ====================
 
-
-    async fetchAllLogKeys() {
-        if (!this.userId) return [];
-        const colRef = collection(db, 'users', this.userId, 'logs');
-        const qSnap = await getDocs(colRef);
-        return qSnap.docs.map(doc => doc.id);
+    getAllLogKeys() {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith(LS_PREFIX + 'log_')) {
+                // Extract date part: kaloriTakip_log_YYYY-MM-DD
+                const dateKey = key.replace(LS_PREFIX + 'log_', '');
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+                    keys.push(dateKey);
+                }
+            }
+        }
+        return keys;
     }
 
-    async renderCalendar() {
-        const logKeys = await this.fetchAllLogKeys();
+    loadLogForKey(key) {
+        const raw = localStorage.getItem(LS_PREFIX + 'log_' + key);
+        if (raw) {
+            try {
+                return JSON.parse(raw) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+        return [];
+    }
+
+    saveLogForKey(key, data) {
+        localStorage.setItem(LS_PREFIX + 'log_' + key, JSON.stringify(data));
+    }
+
+    deleteLogForKey(key) {
+        localStorage.removeItem(LS_PREFIX + 'log_' + key);
+    }
+
+    // ==================== CALENDAR ====================
+
+    renderCalendar() {
+        const logKeys = this.getAllLogKeys();
         
         const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
         this.calendarMonthYear.textContent = `${months[this.currentMonth]} ${this.currentYear}`;
@@ -229,10 +232,10 @@ class CalorieTracker {
                 dayDiv.classList.add('has-log');
             }
             
-            dayDiv.addEventListener('click', async () => {
+            dayDiv.addEventListener('click', () => {
                 this.selectedArchiveDate = dateStr;
-                await this.renderCalendar();
-                await this.loadArchiveForSelectedDate();
+                this.renderCalendar();
+                this.loadArchiveForSelectedDate();
             });
             
             this.calendarGrid.appendChild(dayDiv);
@@ -265,14 +268,14 @@ class CalorieTracker {
 
     // ==================== SETTINGS ====================
     
-    async loadSettings() {
-        if (!this.userId) return;
-        const docRef = doc(db, 'users', this.userId, 'data', 'settings');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            this.settings = docSnap.data();
-        } else {
-            await this.saveSettingsToDb();
+    loadSettings() {
+        const raw = localStorage.getItem(LS_PREFIX + 'settings');
+        if (raw) {
+            try {
+                this.settings = JSON.parse(raw);
+            } catch (e) {
+                this.settings = this.getDefaultSettings();
+            }
         }
     }
 
@@ -349,7 +352,7 @@ class CalorieTracker {
         this.calculatedTargetEl.textContent = Math.round(target) + ' kcal';
     }
 
-    async saveSettings() {
+    saveSettings() {
         this.settings = {
             age: parseInt(this.inputAge.value) || 30,
             gender: this.inputGender.value,
@@ -361,16 +364,10 @@ class CalorieTracker {
         };
         
         this.calculateTarget();
-        await this.saveSettingsToDb();
+        localStorage.setItem(LS_PREFIX + 'settings', JSON.stringify(this.settings));
         this.updateUI();
         this.closeSettings();
         this.showToast('Ayarlar kaydedildi!', 'success');
-    }
-
-    async saveSettingsToDb() {
-        if (!this.userId) return;
-        const docRef = doc(db, 'users', this.userId, 'data', 'settings');
-        await setDoc(docRef, this.settings);
     }
 
     // ==================== FOOD PARSING ====================
@@ -616,33 +613,15 @@ class CalorieTracker {
         this.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // ==================== DAILY LOG ====================
-    
     // ==================== LOG HELPERS ====================
     getDateKey(date) {
         const d = new Date(date);
         return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
-    async loadTodayLog() {
+    loadTodayLog() {
         const today = this.getTodayKey();
-        this.todayLog = await this.loadLogForKey(today);
-    }
-
-    async loadLogForKey(key) {
-        if (!this.userId) return [];
-        const docRef = doc(db, 'users', this.userId, 'logs', key);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return docSnap.data().log || [];
-        }
-        return [];
-    }
-
-    async saveLogForKey(key, data) {
-        if (!this.userId) return;
-        const docRef = doc(db, 'users', this.userId, 'logs', key);
-        await setDoc(docRef, { log: data });
+        this.todayLog = this.loadLogForKey(today);
     }
 
     getTodayKey() {
@@ -650,7 +629,7 @@ class CalorieTracker {
     }
 
     // ==================== ARCHIVE ====================
-    async loadArchiveForSelectedDate() {
+    loadArchiveForSelectedDate() {
         const key = this.selectedArchiveDate;
         if (!key) {
             this.archiveList.innerHTML = `<p class="archive-empty">Seçilen tarihte bir kayıt yok.</p>`;
@@ -658,7 +637,7 @@ class CalorieTracker {
             this.archiveSummary.style.display = 'none';
             return;
         }
-        const log = await this.loadLogForKey(key);
+        const log = this.loadLogForKey(key);
         this.renderArchiveList(log);
         this.deleteDayBtn.style.display = log.length ? 'block' : 'none';
     }
@@ -706,27 +685,24 @@ class CalorieTracker {
         }
     }
 
-    async deleteArchiveDay() {
+    deleteArchiveDay() {
         const key = this.selectedArchiveDate;
         if (!key) return;
         if (confirm('Seçilen günün tüm kayıtlarını silmek istediğinize emin misiniz?')) {
-            if (this.userId) {
-                const docRef = doc(db, 'users', this.userId, 'logs', key);
-                await deleteDoc(docRef);
-            }
-            await this.renderCalendar();
-            await this.loadArchiveForSelectedDate();
+            this.deleteLogForKey(key);
+            this.renderCalendar();
+            this.loadArchiveForSelectedDate();
             this.showToast('Günlük silindi!', 'success');
         }
     }
 
     // ==================== DAILY LOG ====================
-    async saveTodayLog() {
+    saveTodayLog() {
         const today = this.getTodayKey();
-        await this.saveLogForKey(today, this.todayLog);
+        this.saveLogForKey(today, this.todayLog);
     }
 
-    async addToLog() {
+    addToLog() {
         const foundResults = this.currentResults.filter(r => r.found);
         if (foundResults.length === 0) {
             this.showToast('Eklenecek yemek bulunamadı!', 'error');
@@ -746,7 +722,7 @@ class CalorieTracker {
             });
         }
         
-        await this.saveTodayLog();
+        this.saveTodayLog();
         this.updateUI();
         
         // Clear input and results
@@ -757,16 +733,16 @@ class CalorieTracker {
         this.showToast(`${foundResults.length} yemek günlüğe eklendi!`, 'success');
     }
 
-    async removeFromLog(id) {
+    removeFromLog(id) {
         this.todayLog = this.todayLog.filter(entry => entry.id !== id);
-        await this.saveTodayLog();
+        this.saveTodayLog();
         this.updateUI();
     }
 
-    async clearLog() {
+    clearLog() {
         if (confirm('Bugünün günlüğünü temizlemek istediğine emin misin?')) {
             this.todayLog = [];
-            await this.saveTodayLog();
+            this.saveTodayLog();
             this.updateUI();
             this.showToast('Günlük temizlendi!', 'success');
         }
