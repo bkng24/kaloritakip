@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Günlük kalori takip uygulaması - Yediklerini yaz, kalorini hesapla">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KaloriTakip">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    
+    <title>KaloriTakip - Günlük Kalori Hesaplayıcı</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+    
+    <!-- Splash screens for iPhone -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">🔥</span>
+                <h1>KaloriTakip</h1>
+            </div>
+            <button class="settings-btn" id="settingsBtn" title="Ayarlar">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card stat-target">
+                <div class="stat-label">Günlük Hedef</div>
+                <div class="stat-value" id="targetCalories">2400</div>
+                <div class="stat-unit">kcal</div>
+            </div>
+            <div class="stat-card stat-consumed">
+                <div class="stat-label">Tüketilen</div>
+                <div class="stat-value" id="consumedCalories">0</div>
+                <div class="stat-unit">kcal</div>
+            </div>
+            <div class="stat-card stat-remaining">
+                <div class="stat-label">Kalan</div>
+                <div class="stat-value" id="remainingCalories">2400</div>
+                <div class="stat-unit">kcal</div>
+            </div>
+        </div>
+
+        <!-- Progress Ring -->
+        <div class="progress-section">
+            <div class="progress-ring-container">
+                <svg class="progress-ring" viewBox="0 0 200 200">
+                    <circle class="progress-ring-bg" cx="100" cy="100" r="85" />
+                    <circle class="progress-ring-fill" id="progressRing" cx="100" cy="100" r="85" />
+                </svg>
+                <div class="progress-text">
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                    <span class="progress-label" id="progressLabel">hedefe kalan</span>
+                </div>
+            </div>
+            <div class="status-badge" id="statusBadge">
+                <span class="status-icon">✅</span>
+                <span class="status-text">Hedef içindesin!</span>
+            </div>
+        </div>
+
+        <!-- Food Input -->
+        <div class="input-section">
+            <h2 class="section-title">Ne yedin?</h2>
+            <p class="section-desc">Yediklerini aşağıya yaz, yapay zeka kalorilerini hesaplasın.</p>
+            <div class="input-wrapper">
+                <textarea 
+                    id="foodInput" 
+                    class="food-input" 
+                    placeholder="Örnek:&#10;2 dilim ekmek&#10;1 kase çorba&#10;100gr tavuk göğsü&#10;1 bardak ayran&#10;salata"
+                    rows="5"
+                ></textarea>
+                <button class="calculate-btn" id="calculateBtn">
+                    <span class="btn-icon">⚡</span>
+                    <span>Hesapla</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2 class="section-title">Analiz Sonuçları</h2>
+            <div class="results-list" id="resultsList"></div>
+            <div class="results-total">
+                <span>Toplam</span>
+                <span id="totalCalories">0 kcal</span>
+            </div>
+            <button class="add-btn" id="addBtn">
+                <span>📋</span> Günlüğe Ekle
+            </button>
+        </div>
+
+        <!-- Today's Log -->
+        <div class="log-section">
+            <h2 class="section-title">Bugünün Günlüğü</h2>
+            <div class="log-list" id="logList">
+                <div class="log-empty" id="logEmpty">
+                    <span class="empty-icon">🍽️</span>
+                    <p>Henüz bir şey eklenmedi</p>
+                </div>
+            </div>
+            <button class="clear-btn" id="clearBtn" style="display: none;">
+                <span>🗑️</span> Günlüğü Temizle
+            </button>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal-overlay" id="settingsModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>Ayarlar</h2>
+                    <button class="modal-close" id="closeModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="inputAge">Yaş</label>
+                        <input type="number" id="inputAge" value="30" min="10" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputGender">Cinsiyet</label>
+                        <select id="inputGender">
+                            <option value="male">Erkek</option>
+                            <option value="female">Kadın</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputHeight">Boy (cm)</label>
+                        <input type="number" id="inputHeight" value="186" min="100" max="250">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputWeight">Kilo (kg)</label>
+                        <input type="number" id="inputWeight" value="143" min="30" max="300">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputActivity">Aktivite Seviyesi</label>
+                        <select id="inputActivity">
+                            <option value="1.2">Hareketsiz (masa başı)</option>
+                            <option value="1.375" selected>Az hareketli (hafta 1-3 gün)</option>
+                            <option value="1.55">Orta (hafta 3-5 gün)</option>
+                            <option value="1.725">Aktif (hafta 6-7 gün)</option>
+                            <option value="1.9">Çok aktif (ağır antrenman)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputGoal">Hedef</label>
+                        <select id="inputGoal">
+                            <option value="lose">Kilo Vermek</option>
+                            <option value="maintain">Kilo Korumak</option>
+                            <option value="gain">Kilo Almak</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Hesaplanan Günlük Kalori Hedefi</label>
+                        <div class="calculated-target" id="calculatedTarget">2400 kcal</div>
+                    </div>
+                    <button class="save-btn" id="saveSettings">Kaydet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Install PWA Banner -->
+        <div class="install-banner" id="installBanner" style="display: none;">
+            <div class="install-content">
+                <span>📲</span>
+                <div>
+                    <strong>Ana Ekrana Ekle</strong>
+                    <small>Uygulama gibi kullan</small>
+                </div>
+            </div>
+            <button class="install-btn" id="installBtn">Ekle</button>
+            <button class="install-dismiss" id="installDismiss">&times;</button>
+        </div>
+    </div>
+
+    <script src="food-database.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
