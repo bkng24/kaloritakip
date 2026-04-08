@@ -1307,3 +1307,74 @@ body::before {
         background: var(--bg-card-hover);
     }
 }
+
+/* ========== ONAY TOSTU ========== */
+.toast-confirm {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1e1028;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: var(--radius-xl);
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    min-width: 280px;
+    max-width: 340px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(239,68,68,0.2);
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-confirm.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast-confirm-msg {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+    line-height: 1.4;
+}
+
+.toast-confirm-btns {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.tcb-yes, .tcb-no {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-family: var(--font-family);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tcb-yes {
+    background: var(--gradient-danger);
+    color: white;
+}
+
+.tcb-yes:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.tcb-no {
+    background: var(--bg-card-hover);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.tcb-no:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}

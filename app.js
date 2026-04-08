@@ -408,14 +408,16 @@ class CalorieTracker {
     }
 
     clearLog() {
-        const label = this.activeDate === this.todayKey ? 'bugünün günlüğünü' : `${this.formatDate(this.activeDate)} günlüğünü`;
-        if (confirm(`${this.capitalize(label)} temizlemek istediğine emin misin?`)) {
+        const label = this.activeDate === this.todayKey
+            ? 'Bugünün günlüğü'
+            : `${this.formatDate(this.activeDate)} günlüğü`;
+        this.showConfirm(`${label} silinsin mi?`, () => {
             this.activeLog = [];
             this.deleteLog(this.activeDate);
             this.renderCalendar();
             this.updateUI();
             this.showToast('Günlük temizlendi!', 'success');
-        }
+        });
     }
 
     // ==================== CALENDAR ====================
@@ -605,6 +607,33 @@ class CalorieTracker {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 400);
         }, 2500);
+    }
+
+    showConfirm(message, onConfirm) {
+        // Varsa önceki onay tostu kaldır
+        document.querySelector('.toast-confirm')?.remove();
+
+        const el = document.createElement('div');
+        el.className = 'toast-confirm';
+        el.innerHTML = `
+            <span class="toast-confirm-msg">⚠️ ${message}</span>
+            <div class="toast-confirm-btns">
+                <button class="tcb-yes">Evet, sil</button>
+                <button class="tcb-no">Hayır</button>
+            </div>`;
+        document.body.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('show'));
+
+        const close = () => {
+            el.classList.remove('show');
+            setTimeout(() => el.remove(), 350);
+        };
+
+        el.querySelector('.tcb-yes').addEventListener('click', () => { close(); onConfirm(); });
+        el.querySelector('.tcb-no').addEventListener('click', close);
+
+        // 6 saniye sonra otomatik kapat
+        setTimeout(close, 6000);
     }
 
     // ==================== BİLDİRİMLER ====================
