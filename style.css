@@ -645,11 +645,21 @@ body::before {
 }
 
 .calendar-day.selected {
-    background: var(--accent-primary);
+    background: var(--gradient-primary);
     color: white;
-    font-weight: 600;
-    border-color: var(--accent-primary);
-    box-shadow: 0 4px 12px var(--accent-glow);
+    font-weight: 800;
+    border-color: transparent;
+    box-shadow: 0 0 0 2px var(--accent-primary),
+                0 0 16px rgba(139, 92, 246, 0.55),
+                0 4px 12px rgba(139, 92, 246, 0.4);
+    transform: scale(1.18);
+    z-index: 1;
+    animation: selectedPulse 2s ease-in-out infinite;
+}
+
+@keyframes selectedPulse {
+    0%, 100% { box-shadow: 0 0 0 2px var(--accent-primary), 0 0 16px rgba(139,92,246,0.55), 0 4px 12px rgba(139,92,246,0.4); }
+    50%       { box-shadow: 0 0 0 3px var(--accent-secondary), 0 0 24px rgba(139,92,246,0.75), 0 4px 16px rgba(139,92,246,0.5); }
 }
 
 .calendar-day.has-log::after {
